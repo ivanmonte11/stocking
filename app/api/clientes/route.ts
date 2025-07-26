@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 
-export const runtime = 'node'; // ✅ Evita que Vercel use Edge Runtime
+export const runtime = 'nodejs'; 
 
 const prisma = new PrismaClient();
 
