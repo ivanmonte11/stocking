@@ -1,20 +1,12 @@
 import { PrismaClient } from '@prisma/client';
 import { NextResponse } from 'next/server';
-import { getTokenData } from '@/lib/auth';
-import { cookies } from 'next/headers';
+import { getUserFromCookies } from '@/lib/getUserFromCookies';
 
 const prisma = new PrismaClient();
 
-async function getUserToken() {
-  const cookieStore = cookies();
-  const token = cookieStore.get('token')?.value;
-  if (!token) throw new Error('No autorizado');
-  return await getTokenData(token);
-}
-
 export async function GET() {
   try {
-    const user = await getUserToken();
+    const user = await getUserFromCookies();
 
     const variantes = await prisma.varianteProducto.findMany({
       where: { 

@@ -1,24 +1,15 @@
-// app/api/productos/categorias/route.ts
 import { PrismaClient } from '@prisma/client';
 import { NextResponse } from 'next/server';
-import { getTokenData } from '@/lib/auth';
-import { cookies } from 'next/headers';
+import { getUserFromCookies } from '@/lib/getUserFromCookies';
 
 const prisma = new PrismaClient();
 
-async function getUserToken() {
-  const cookieStore = cookies();
-  const token = cookieStore.get('token')?.value;
-  if (!token) throw new Error('No autorizado');
-  return await getTokenData(token);
-}
-
 export async function GET() {
   try {
-     const user = await getUserToken(); 
+    const user = await getUserFromCookies();
 
     const categorias = await prisma.producto.findMany({
-    where: { 
+      where: { 
         categoria: { not: null },
         tenantId: user.tenantId
       },
@@ -26,13 +17,13 @@ export async function GET() {
       distinct: ['categoria'],
     });
 
-  const valores = Array.from(new Set(
-  categorias
-    .map((c) => c.categoria?.trim())
-    .filter(Boolean)
-));
-
-
+    const valores = Array.from(
+      new Set(
+        categorias
+          .map((c) => c.categoria?.trim())
+          .filter(Boolean)
+      )
+    );
 
     return NextResponse.json({ data: valores });
   } catch (error) {
