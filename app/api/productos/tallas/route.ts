@@ -2,8 +2,6 @@ import { PrismaClient } from '@prisma/client';
 import { NextResponse } from 'next/server';
 import { getUserFromCookies } from '@/lib/getUserFromCookies'; // o donde lo tengas
 
-export const dynamic = 'force-dynamic';
-
 const prisma = new PrismaClient();
 
 export async function GET() {
