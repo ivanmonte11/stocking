@@ -1,31 +1,46 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { productoSchema } from '@/lib/validations/productoSchema';
-import { v4 as uuidv4, validate } from 'uuid';
+import { v4 as uuidv4 } from 'uuid';
+import { getTokenData } from '@/lib/auth';
+import { cookies } from 'next/headers';
 
 const prisma = new PrismaClient();
 
+// 🔐 Helper para obtener datos del usuario desde el token
+export async function getUserToken() {
+  const cookieStore = cookies();
+  const token = cookieStore.get('token')?.value;
+
+  if (!token) throw new Error('No autorizado');
+
+  return await getTokenData(token);
+}
+
+// 📦 GET: Obtener productos paginados del tenant actual
 export async function GET(request: Request) {
   try {
+    const user = await getUserToken();
     const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '10');
+    const page = parseInt(searchParams.get('page') || '1', 10);
+    const limit = parseInt(searchParams.get('limit') || '10', 10);
 
     const productos = await prisma.producto.findMany({
+      where: { tenantId: user.tenantId },
       skip: (page - 1) * limit,
       take: limit,
-      orderBy: {
-        fecha_creacion: 'desc',
-      },
+      orderBy: { fechaCreacion: 'desc' },
       include: {
         variantes: true,
       },
     });
 
-    const total = await prisma.producto.count();
+    const total = await prisma.producto.count({
+      where: { tenantId: user.tenantId },
+    });
 
     return NextResponse.json({
-      data: productos,
+      data: productos, // codigoBarra siempre se incluirá porque es parte del modelo
       pagination: {
         page,
         limit,
@@ -34,6 +49,7 @@ export async function GET(request: Request) {
       },
     });
   } catch (error) {
+    console.error('Error al obtener productos:', error);
     return NextResponse.json(
       { error: 'Error al obtener productos' },
       { status: 500 }
@@ -43,6 +59,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const user = await getUserToken();
     const body = await request.json();
 
     const parsedBody = {
@@ -51,26 +68,32 @@ export async function POST(request: Request) {
       costo: parseFloat(body.costo),
       variantes: body.variantes.map((v: any) => ({
         ...v,
-        stock: parseInt(v.stock),
+        stock: parseInt(v.stock, 10) || 0,
       })),
     };
 
+    // Unificamos siempre codigoBarra (sin guion bajo)
     const validatedData = productoSchema.parse({
       ...parsedBody,
-      codigo_barra: parsedBody.codigo_barra?.trim() || uuidv4().slice(0, 12).toUpperCase(),
+      codigoBarra: parsedBody.codigoBarra?.trim() || uuidv4().slice(0, 12).toUpperCase(),
     });
 
-    // Primero, creamos el producto con sus variantes
+    // 🛠️ Crear producto con variantes, incluyendo tenantId
     const producto = await prisma.producto.create({
       data: {
-        codigo_barra: validatedData.codigo_barra,
+        codigoBarra: validatedData.codigoBarra,
         nombre: validatedData.nombre,
         descripcion: validatedData.descripcion,
         precio: validatedData.precio,
         costo: validatedData.costo,
         categoria: validatedData.categoria,
+        tenantId: user.tenantId,
+        creadoPorId: user.id,
         variantes: {
-          create: validatedData.variantes,
+          create: validatedData.variantes.map(v => ({
+            ...v,
+            tenantId: user.tenantId,
+          })),
         },
       },
       include: {
@@ -78,39 +101,42 @@ export async function POST(request: Request) {
       },
     });
 
-    // Sumamos el total de stock (podés cambiar esto por un cálculo en base a costo o lo que prefieras)
-    const totalStock = producto.variantes.reduce(
-  (acc: number, variante: typeof producto.variantes[number]) => acc + variante.stock,
-  0
-);
+    const variantesConStock = producto.variantes.filter(v => v.stock > 0);
 
+    const totalStock = variantesConStock.reduce(
+      (acc, variante) => acc + variante.stock,
+      0
+    );
 
-    // Creamos una transacción general para esta entrada de producto
-const transaccion = await prisma.transaccion.create({
-  data: {
-    tipo: 'COMPRA',
-    fecha: new Date(),
-    total: totalStock,
-    movimientos: {
-      create: producto.variantes
-        .filter((v: typeof producto.variantes[number]) => v.stock > 0)
-        .map((v: typeof producto.variantes[number]) => ({
-          producto_id: producto.id,
-          varianteId: v.id,
-          cantidad: v.stock,
-          tipo_movimiento: 'ENTRADA',
-          motivo: `Stock inicial de variante ${v.color || ''}-${v.talla || ''}`,
-        })),
-    },
-  },
-  include: {
-    movimientos: true,
-  },
-});
+    // 🧾 Crear transacción con movimientos, incluyendo tenantId
+    const transaccion = await prisma.transaccion.create({
+      data: {
+        tipo: 'COMPRA',
+        fecha: new Date(),
+        total: totalStock,
+        tenantId: user.tenantId,
+        usuarioId: user.id,
+        movimientos: {
+          create: variantesConStock.map(v => ({
+            cantidad: v.stock,
+            tipoMovimiento: 'ENTRADA',
+            motivo: `Stock inicial de variante ${v.color || ''}-${v.talla || ''}`,
+            fecha: new Date(),
+            productoId: producto.id,
+            varianteId: v.id,
+            usuarioId: user.id,
+            tenantId: user.tenantId,
+          })),
+        },
+      },
+      include: {
+        movimientos: true,
+      },
+    });
 
     return NextResponse.json({ producto, transaccion }, { status: 201 });
   } catch (error: any) {
-    console.error('Error:', error);
+    console.error('Error al crear producto:', error instanceof Error ? error.message : error);
 
     if (error.name === 'ZodError') {
       return NextResponse.json(
@@ -132,5 +158,3 @@ const transaccion = await prisma.transaccion.create({
     );
   }
 }
-
-

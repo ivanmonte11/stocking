@@ -44,18 +44,18 @@ export async function PUT(
       stock: body.stock ? parseInt(body.stock) : 0
     };
 
-    const validatedData = productoSchema.parse(body);
+    const validatedData = productoSchema.parse(parsedBody);
 
     const producto = await prisma.producto.update({
       where: { id: parseInt(params.id) },
       data: {
-      codigo_barra: validatedData.codigo_barra,
+      codigoBarra: validatedData.codigoBarra,
         nombre: validatedData.nombre,
         descripcion: validatedData.descripcion,
         precio: validatedData.precio,
         costo: validatedData.costo,
         categoria: validatedData.categoria,     
-        fecha_actualizacion: new Date(),
+        fechaActualizacion: new Date(),
       },
     });
 

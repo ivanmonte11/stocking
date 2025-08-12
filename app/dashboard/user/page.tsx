@@ -2,9 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { FiPackage, FiAlertTriangle, FiRefreshCw, FiDollarSign, FiUsers, FiTrendingUp, FiList, FiPieChart } from 'react-icons/fi';
 import axios from 'axios';
+import { useAuth } from '@/context/AuthContext';
+import { FiPackage, FiAlertTriangle, FiRefreshCw, FiDollarSign, FiUsers, FiTrendingUp, FiPieChart } from 'react-icons/fi';
 import VentasMensualesChart from '@/components/sales/VentasMensualesChart';
+import { FiList } from 'react-icons/fi';
+
 
 interface DashboardStats {
   products: number;
@@ -30,8 +33,11 @@ interface Movement {
 }
 
 export default function UserDashboard() {
+  const { user, isAuthenticated, loading: authLoading } = useAuth();
+  const router = useRouter();
+
   const [movimientos, setMovimientos] = useState<Movement[]>([]);
-  const [filtro, setFiltro] = useState('Hoy');
+  const [filtro, setFiltro] = useState<'Hoy' | 'Esta semana' | 'Este mes' | 'Mes pasado'>('Hoy');
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<DashboardStats>({
     products: 0,
@@ -48,18 +54,18 @@ export default function UserDashboard() {
     profitGrowth: 0
   });
 
-  const router = useRouter();
-
+  // 🔐 Redirección si el usuario no está autenticado
   useEffect(() => {
-    const token = document.cookie.split('; ').find(row => row.startsWith('token='));
-    if (!token) {
+    if (!authLoading && (!user || !isAuthenticated)) {
       router.push('/auth/login');
-      return;
     }
+  }, [authLoading, user, isAuthenticated, router]);
 
+  // 📊 Cargar estadísticas cuando el usuario esté autenticado
+  useEffect(() => {
     const fetchStats = async () => {
       try {
-        const { data } = await axios.get('/api/dashboard/stats');
+        const { data } = await axios.get('/api/dashboard/stats'); // Token httpOnly via cookie
         setStats({
           products: data.totalProducts || 0,
           lowStock: data.lowStockItems || 0,
@@ -81,9 +87,10 @@ export default function UserDashboard() {
       }
     };
 
-    fetchStats();
-  }, [router]);
+    if (!authLoading && isAuthenticated) fetchStats();
+  }, [authLoading, isAuthenticated]);
 
+  // 📦 Cargar movimientos
   useEffect(() => {
     const fetchMovimientos = async () => {
       try {
@@ -94,41 +101,38 @@ export default function UserDashboard() {
       }
     };
 
-    fetchMovimientos();
-  }, []);
+    if (!authLoading && isAuthenticated) fetchMovimientos();
+  }, [authLoading, isAuthenticated]);
 
-
-  const movimientosFiltrados = movimientos.filter((mov) => {
+  // 🔍 Filtrar movimientos por rango
+  const movimientosFiltrados = movimientos.filter((mov: Movement) => {
     const fechaMov = new Date(mov.fecha);
     const ahora = new Date();
 
     switch (filtro) {
       case 'Hoy':
         return fechaMov.toDateString() === ahora.toDateString();
-
       case 'Esta semana': {
         const inicioSemana = new Date(ahora);
         inicioSemana.setDate(ahora.getDate() - ahora.getDay());
         inicioSemana.setHours(0, 0, 0, 0);
         return fechaMov >= inicioSemana && fechaMov <= ahora;
       }
-
       case 'Este mes': {
         const inicioMes = new Date(ahora.getFullYear(), ahora.getMonth(), 1);
         return fechaMov >= inicioMes && fechaMov <= ahora;
       }
-
       case 'Mes pasado': {
         const inicioMesPasado = new Date(ahora.getFullYear(), ahora.getMonth() - 1, 1);
         const finMesPasado = new Date(ahora.getFullYear(), ahora.getMonth(), 0, 23, 59, 59);
         return fechaMov >= inicioMesPasado && fechaMov <= finMesPasado;
       }
-
       default:
         return true;
     }
   });
 
+  // 🕑 Loader inicial
   if (loading) {
     return (
       <div className="p-6 flex justify-center items-center h-[80vh]">
@@ -137,60 +141,19 @@ export default function UserDashboard() {
     );
   }
 
+  // 🎨 Render principal
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-6">Gestión de Indumentaria</h1>
 
-      {/* Resumen General */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-        <DashboardCard
-          title="Productos Totales"
-          value={stats.products.toString()}
-          icon={<FiPackage className="text-blue-500" size={24} />}
-          trend="up"
-          percentage="-"
-        />
-        <DashboardCard
-          title="Stock Crítico"
-          value={stats.lowStock.toString()}
-          icon={<FiAlertTriangle className="text-red-500" size={24} />}
-          alert
-          trend="up"
-          percentage={`${Math.abs(stats.lowStockGrowth).toFixed(1)}%`}
-        />
-        <DashboardCard
-          title="Movimientos Hoy"
-          value={stats.todayMovements.toString()}
-          icon={<FiRefreshCw className="text-green-500" size={24} />}
-        />
-        <DashboardCard
-          title="Ventas Mensuales"
-          value={`$${stats.monthlySales.toLocaleString()}`}
-          icon={<FiDollarSign className="text-purple-500" size={24} />}
-          trend={stats.lowStockGrowth >= 0 ? 'up' : 'down'}
-          percentage={`${Math.abs(stats.salesGrowth).toFixed(1)}%`}
-        />
-        <DashboardCard
-          title="Clientes"
-          value={stats.customers.toString()}
-          icon={<FiUsers className="text-yellow-500" size={24} />}
-          trend={stats.lowStockGrowth >= 0 ? 'up' : 'down'}
-          percentage={`${Math.abs(stats.customersGrowth).toFixed(1)}%`}
-        />
-        <DashboardCard
-          title="Ingresos Mensuales"
-          value={`$${stats.revenue.toLocaleString()}`}
-          icon={<FiTrendingUp className="text-green-500" size={24} />}
-          trend={stats.lowStockGrowth >= 0 ? 'up' : 'down'}
-          percentage={`${Math.abs(stats.revenueGrowth).toFixed(1)}%`}
-        />
-        <DashboardCard
-          title="Ganancia Neta"
-          value={`$${stats.profit.toLocaleString()}`}
-          icon={<FiPieChart className="text-emerald-500" size={24} />}
-          trend={stats.lowStockGrowth >= 0 ? 'up' : 'down'}
-          percentage={`${Math.abs(stats.profitGrowth).toFixed(1)}%`}
-        />
+        <DashboardCard title="Productos Totales" value={stats.products.toString()} icon={<FiPackage className="text-blue-500" size={24} />} trend="up" percentage="-" />
+        <DashboardCard title="Stock Crítico" value={stats.lowStock.toString()} icon={<FiAlertTriangle className="text-red-500" size={24} />} alert trend="up" percentage={`${Math.abs(stats.lowStockGrowth).toFixed(1)}%`} />
+        <DashboardCard title="Movimientos Hoy" value={stats.todayMovements.toString()} icon={<FiRefreshCw className="text-green-500" size={24} />} />
+        <DashboardCard title="Ventas Mensuales" value={`$${stats.monthlySales.toLocaleString()}`} icon={<FiDollarSign className="text-purple-500" size={24} />} trend="up" percentage={`${Math.abs(stats.salesGrowth).toFixed(1)}%`} />
+        <DashboardCard title="Clientes" value={stats.customers.toString()} icon={<FiUsers className="text-yellow-500" size={24} />} trend="up" percentage={`${Math.abs(stats.customersGrowth).toFixed(1)}%`} />
+        <DashboardCard title="Ingresos Mensuales" value={`$${stats.revenue.toLocaleString()}`} icon={<FiTrendingUp className="text-green-500" size={24} />} trend="up" percentage={`${Math.abs(stats.revenueGrowth).toFixed(1)}%`} />
+        <DashboardCard title="Ganancia Neta" value={`$${stats.profit.toLocaleString()}`} icon={<FiPieChart className="text-emerald-500" size={24} />} trend="up" percentage={`${Math.abs(stats.profitGrowth).toFixed(1)}%`} />
       </div>
 
 
@@ -202,7 +165,8 @@ export default function UserDashboard() {
             <select
               className="border rounded px-3 py-1 text-sm"
               value={filtro}
-              onChange={(e) => setFiltro(e.target.value)}
+              onChange={(e) => setFiltro(e.target.value as 'Hoy' | 'Esta semana' | 'Este mes' | 'Mes pasado')}
+
             >
               <option value="Hoy">Hoy</option>
               <option value="Esta semana">Esta semana</option>

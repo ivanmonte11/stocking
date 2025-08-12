@@ -22,7 +22,7 @@ export const varianteSchema = z.object({
 });
 
 export const productoSchema = z.object({
-  codigo_barra: z.string().min(1, 'El código es obligatorio'),
+  codigoBarra: z.string().min(1, 'El código es obligatorio'),
   nombre: z.string().min(1, 'El nombre es obligatorio'),
   precio: numberLike,
   costo: numberLike,

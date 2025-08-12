@@ -1,35 +1,43 @@
 import { PrismaClient } from '@prisma/client';
 import { ProductsTable } from '@/components/productos/ProductsTable';
+import { getTokenData } from '@/lib/auth';
+import { cookies } from 'next/headers';
 
 const prisma = new PrismaClient();
+
+async function getUserToken() {
+  const token = cookies().get('token')?.value;
+  if (!token) throw new Error('No autorizado');
+  return await getTokenData(token);
+}
 
 export default async function ProductsPage({
   searchParams,
 }: {
   searchParams: { [key: string]: string | string[] | undefined };
 }) {
+  const user = await getUserToken();
+  
   const page = typeof searchParams.page === 'string' ? parseInt(searchParams.page) : 1;
   const limit = typeof searchParams.limit === 'string' ? parseInt(searchParams.limit) : 10;
 
-  // ✅ Incluir variantes para poder calcular el stock total
+  // ✅ Filtrar por tenantId
   const productos = await prisma.producto.findMany({
+    where: { tenantId: user.tenantId },
     skip: (page - 1) * limit,
     take: limit,
-    orderBy: {
-      fecha_creacion: 'desc',
-    },
-    include: {
-      variantes: true,
-    },
+    orderBy: { fechaCreacion: 'desc' },
+    include: { variantes: true },
   });
 
-  const total = await prisma.producto.count();
+  const total = await prisma.producto.count({
+    where: { tenantId: user.tenantId },
+  });
 
-  // ✅ Transformar los productos para calcular stock total desde las variantes
   const productosConStock = productos.map((p) => ({
     id: p.id,
     nombre: p.nombre,
-    codigo_barra: p.codigo_barra ?? '',
+    codigoBarra: p.codigoBarra ?? '',
     precio: p.precio,
     stock: p.variantes.reduce((acc, v) => acc + v.stock, 0),
     categoria: p.categoria,

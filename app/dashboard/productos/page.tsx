@@ -25,7 +25,7 @@ export default function ProductosPage() {
       >
         {productos.map((producto: any) => (
           <tr key={producto.id}>
-            <td className="px-6 py-4 whitespace-nowrap">{producto.codigo_barras}</td>
+            <td className="px-6 py-4 whitespace-nowrap">{producto.codigoBarras}</td>
             <td className="px-6 py-4 whitespace-nowrap">{producto.nombre}</td>
             <td className="px-6 py-4 whitespace-nowrap">{producto.categoria}</td>
             <td className="px-6 py-4 whitespace-nowrap">{producto.talla}</td>

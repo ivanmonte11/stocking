@@ -8,7 +8,7 @@ import { Pagination } from '@/components/ui/pagination';
 interface ProductsTableProps {
   productos: Array<{
     id: number;
-    codigo_barra: string;
+    codigoBarra: string;
     nombre: string;
     precio: number;
     stock: number;
@@ -38,7 +38,7 @@ export const ProductsTable = ({ productos, currentPage, totalPages }: ProductsTa
           <tbody className="bg-white divide-y divide-gray-200">
             {productos.map((producto) => (
               <tr key={producto.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{producto.codigo_barra}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{producto.codigoBarra}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                   <Link href={`/products/${producto.id}`} className="text-blue-600 hover:text-blue-900">
                     {producto.nombre}

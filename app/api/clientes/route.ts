@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
+import { cookies } from 'next/headers';
+import { getTokenData } from '@/lib/auth';
 
 export const runtime = 'nodejs'; 
 
@@ -7,23 +9,22 @@ const prisma = new PrismaClient();
 
 // GET: listar clientes con ventas
 export async function GET() {
+  const token = cookies().get('token')?.value;
+  if (!token) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+
+  const user = await getTokenData(token);
+  if (!user?.tenantId) return NextResponse.json({ error: 'Tenant no definido' }, { status: 400 });
+
   try {
     const clientes = await prisma.cliente.findMany({
+      where: { tenantId: user.tenantId }, // <-- filtro tenant aquí
       orderBy: { createdAt: 'desc' },
       include: {
         ventas: true,
       },
     });
 
-    const clientesConVentas = clientes.map(
-  (cliente: typeof clientes[number]) => ({
-    ...cliente,
-    ventas: cliente.ventas ?? [],
-  })
-);
-
-
-    return NextResponse.json(clientesConVentas);
+    return NextResponse.json(clientes);
   } catch (error) {
     console.error('Error al obtener clientes:', error);
     return NextResponse.json(
@@ -32,6 +33,7 @@ export async function GET() {
     );
   }
 }
+
 
 // POST: crear cliente
 export async function POST(req: Request) {

@@ -18,7 +18,16 @@ export async function POST(request: Request) {
     }
 
     const user = await prisma.user.findUnique({
-      where: { email }
+      where: { email },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        password: true,
+        role: true,
+        tenantId: true,
+        createdAt: true
+      }
     });
 
     if (!user) {
@@ -37,7 +46,13 @@ export async function POST(request: Request) {
     }
 
     const token = jwt.sign(
-      { id: user.id, email: user.email, role: user.role },
+      {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        tenantId: user.tenantId
+      },
       JWT_SECRET,
       { expiresIn: '8h' }
     );
@@ -47,14 +62,25 @@ export async function POST(request: Request) {
       name: user.name,
       email: user.email,
       role: user.role,
+      tenantId: user.tenantId,
       createdAt: user.createdAt
     };
 
-    return NextResponse.json({
+    // 🧁 Respuesta con cookie
+    const response = NextResponse.json({
       success: true,
       user: userData,
-      token
+
     });
+
+    response.cookies.set('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      path: '/',
+      maxAge: 60 * 60 * 8 // 8 horas
+    });
+
+    return response;
 
   } catch (error) {
     console.error('Login error:', error);

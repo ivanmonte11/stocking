@@ -39,15 +39,17 @@ export async function POST(request: Request) {
 
       await prisma.movimientoStock.create({
         data: {
-          producto_id: productoIdInt,
+          productoId: productoIdInt,
           varianteId: varianteIdInt,
           cantidad,
-          tipo_movimiento,
+          tipoMovimiento: tipo_movimiento,
           motivo,
-          usuario,
+          usuarioId: usuario ? parseInt(usuario) : undefined,
           fecha: new Date(),
+          tenantId: variante.tenantId,
         },
       });
+
 
       await prisma.varianteProducto.update({
         where: { id: varianteIdInt },

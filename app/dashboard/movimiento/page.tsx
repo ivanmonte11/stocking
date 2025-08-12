@@ -31,9 +31,6 @@ export default function RegistrarMovimientoPage() {
     setMovimientos(nuevos);
   };
 
-  // (todo lo demás permanece igual)
-
-
   // Cargar productos
   useEffect(() => {
     axios.get('/api/productos')
@@ -88,14 +85,14 @@ export default function RegistrarMovimientoPage() {
   }
 
   try {
-    // Asegúrate de que esta URL coincida con tu backend
-    await axios.post('/api/movimientos', {
-      producto_id: productoId,
-      tipo_movimiento: tipoMovimiento,
-      motivo,
-      usuario,
-      variantes: movimientos,
-    });
+   await axios.post('/api/movimientos', {
+  productoId,
+  tipoMovimiento,
+  motivo,
+  usuario,
+  variantes: movimientos,
+});
+
 
     setMensaje('Movimiento registrado correctamente ✅');
     

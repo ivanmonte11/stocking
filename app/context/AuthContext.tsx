@@ -1,10 +1,20 @@
+// context/AuthContext.tsx
 'use client';
 import { createContext, useContext, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
+interface UserData {
+  id: number;
+  name: string;
+  email: string;
+  role: string;
+  tenantId: number;
+}
+
 interface AuthContextType {
   isAuthenticated: boolean;
-  login: () => void;
+  user: UserData | null;
+  login: (token: string, userData: UserData) => void;
   logout: () => void;
   loading: boolean;
 }
@@ -14,35 +24,44 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const router = useRouter();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // 🔍 Verifica si hay token en la cookie al montar el componente
   useEffect(() => {
-    const token = document.cookie.split('; ').find(row => row.startsWith('token='));
-    console.log('TOKEN:', token); // solo para debug
-    setIsAuthenticated(!!token);
+    // Intenta cargar la sesión al inicio
+    const token = localStorage.getItem('token');
+    const userData = localStorage.getItem('user');
+
+    if (token && userData) {
+      try {
+        const parsedUser = JSON.parse(userData);
+        setUser(parsedUser);
+        setIsAuthenticated(true);
+      } catch (error) {
+        console.error('Error al parsear user data:', error);
+        logout();
+      }
+    }
     setLoading(false);
   }, []);
 
-  // ✅ Observa cambios en auth y redirige si es false
-  useEffect(() => {
-    if (!loading && !isAuthenticated) {
-      router.push('/');
-    }
-  }, [isAuthenticated, loading]);
-
-  const login = () => {
+  const login = (token: string, userData: UserData) => {
+    localStorage.setItem('token', token);
+    localStorage.setItem('user', JSON.stringify(userData));
+    setUser(userData);
     setIsAuthenticated(true);
   };
 
   const logout = () => {
-    document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    setUser(null);
     setIsAuthenticated(false);
-    // No es necesario router.push aquí: lo maneja el useEffect
+    router.push('/login');
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, login, logout, loading }}>
+    <AuthContext.Provider value={{ isAuthenticated, user, login, logout, loading }}>
       {children}
     </AuthContext.Provider>
   );

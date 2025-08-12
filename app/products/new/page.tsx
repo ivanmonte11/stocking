@@ -3,30 +3,29 @@
 import { useRouter } from 'next/navigation';
 import { ProductoForm } from '@/components/productos/ProductoForm.';
 import { toast } from 'react-hot-toast';
+import useApi from '@/lib/hooks/useApi';
+import { useState } from 'react';
 
 export default function NewProductPage() {
   const router = useRouter();
+  const { fetchAuthed } = useApi();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (values: any) => {
+    setIsSubmitting(true);
     try {
-      const response = await fetch('/api/productos', {
+      const data = await fetchAuthed('/api/productos', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(values),
+        body: JSON.stringify(values)
       });
 
-      if (!response.ok) {
-        throw new Error('Error al crear el producto');
-      }
-
-      const data = await response.json();
       toast.success('Producto creado exitosamente');
       router.push(`/products/${data.producto.id}`);
     } catch (error) {
-      toast.error('Error al crear el producto');
+      toast.error(error instanceof Error ? error.message : 'Error al crear el producto');
       console.error('Error:', error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -37,7 +36,7 @@ export default function NewProductPage() {
         <div className="bg-white p-6 rounded-lg shadow">
           <ProductoForm 
             onSubmit={handleSubmit} 
-            isSubmitting={false}
+            isSubmitting={isSubmitting}
           />
         </div>
       </div>

@@ -1,29 +1,32 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
+import { cookies } from 'next/headers';
+import { getTokenData } from '@/lib/auth'; // función que decodifica token y obtiene datos
 
 const prisma = new PrismaClient();
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const ventas = await prisma.movimientoStock.groupBy({
-      by: ['tipo_movimiento'],
-      _sum: {
-        cantidad: true,
-      },
-    });
+    const token = cookies().get('token')?.value;
+    if (!token) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
 
-    // Si necesitas agrupado por mes y año:
+    const user = await getTokenData(token);
+    if (!user?.tenantId) return NextResponse.json({ error: 'Tenant no definido' }, { status: 400 });
+
+    const tenantId = user.tenantId;
+
     const result = await prisma.$queryRaw`
       SELECT 
         DATE_TRUNC('month', "fecha") as mes,
         SUM("cantidad") as total
       FROM "MovimientoStock"
-      WHERE "tipo_movimiento" = 'SALIDA' AND "motivo"  ILIKE '%venta%'
+      WHERE "tipoMovimiento" = 'SALIDA' 
+        AND "motivo" ILIKE '%venta%'
+        AND "tenantId" = ${tenantId}
       GROUP BY mes
       ORDER BY mes;
     `;
 
-    // Formatear respuesta
     const data = (result as any[]).map((row) => {
       const fecha = new Date(row.mes);
       const nombreMes = new Intl.DateTimeFormat('es-ES', { month: 'long', timeZone: 'UTC' }).format(fecha);

@@ -5,13 +5,12 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { ProductoFormValues, productoSchema } from '../../lib/validations/productoSchema';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
-import { Select } from '../ui/Select';
 import { v4 as uuidv4 } from 'uuid';
 import { useEffect, useState } from 'react';
 import { FieldError } from 'react-hook-form';
-import axios from 'axios';
+import useApi from '@/lib/hooks/useApi';
 import { AgregarVarianteModal } from './AgregarVarianteModal';
-
+import { toast } from 'react-hot-toast';
 
 interface ProductoFormProps {
   initialData?: any;
@@ -30,13 +29,11 @@ export const ProductoForm = ({ initialData, onSubmit, isSubmitting }: ProductoFo
   const [nuevaCategoria, setNuevaCategoria] = useState('');
   const [colores, setColores] = useState<string[]>([]);
   const [tallas, setTallas] = useState<string[]>([]);
-
   const [camposPersonalizados, setCamposPersonalizados] = useState<
     { index: number; tipo: 'color' | 'talla' }[]
   >([]);
-
   const [mostrarVarianteModal, setMostrarVarianteModal] = useState(false);
-
+  const { fetchAuthed } = useApi();
 
   const {
     register,
@@ -60,22 +57,30 @@ export const ProductoForm = ({ initialData, onSubmit, isSubmitting }: ProductoFo
   });
 
   useEffect(() => {
-    axios.get('/api/productos/categorias')
-      .then((res) => setCategorias(Array.isArray(res.data) ? res.data : []))
-      .catch(() => setCategorias([]));
+    // Cargar categorías, colores y tallas usando useApi
+    const loadData = async () => {
+      try {
+        const [categoriasRes, coloresRes, tallasRes] = await Promise.all([
+          fetchAuthed('/api/productos/categorias'),
+          fetchAuthed('/api/productos/colores'),
+          fetchAuthed('/api/productos/tallas')
+        ]);
 
-    axios.get('/api/productos/colores')
-      .then((res) => setColores(Array.isArray(res.data) ? res.data : []))
-      .catch(() => setColores([]));
+        setCategorias(Array.isArray(categoriasRes.data) ? categoriasRes.data : []);
+        setColores(Array.isArray(coloresRes.data) ? coloresRes.data : []);
+        setTallas(Array.isArray(tallasRes.data) ? tallasRes.data : []);
+      } catch (error) {
+        toast.error('Error al cargar datos iniciales');
+        console.error('Error loading initial data:', error);
+      }
+    };
 
-    axios.get('/api/productos/tallas')
-      .then((res) => setTallas(Array.isArray(res.data) ? res.data : []))
-      .catch(() => setTallas([]));
-  }, []);
+    loadData();
+  }, [fetchAuthed]);
 
   const generarCodigo = () => {
     const nuevoCodigo = uuidv4().slice(0, 12).replace(/-/g, '').toUpperCase();
-    setValue('codigo_barra', nuevoCodigo);
+    setValue('codigoBarra', nuevoCodigo);
     setCodigoGenerado(nuevoCodigo);
   };
 
@@ -100,12 +105,18 @@ export const ProductoForm = ({ initialData, onSubmit, isSubmitting }: ProductoFo
         <div>
           <Input
             label="Código de Barras"
-            id="codigo_barra"
+            id="codigoBarra"
             register={register}
-            error={getFieldError(errors.codigo_barra)}
+            error={getFieldError(errors.codigoBarra)}
             required
           />
-          <Button type="button" onClick={generarCodigo} className="mt-2" variant="outline">
+          <Button 
+            type="button" 
+            onClick={generarCodigo} 
+            className="mt-2" 
+            variant="outline"
+            disabled={isSubmitting}
+          >
             Generar Código
           </Button>
           {codigoGenerado && (
@@ -115,9 +126,34 @@ export const ProductoForm = ({ initialData, onSubmit, isSubmitting }: ProductoFo
           )}
         </div>
 
-        <Input label="Nombre" id="nombre" register={register} error={getFieldError(errors.nombre)} required />
-        <Input label="Precio" id="precio" type="number" step="0.01" register={register} error={getFieldError(errors.precio)} required />
-        <Input label="Costo" id="costo" type="number" step="0.01" register={register} error={getFieldError(errors.costo)} required />
+        <Input 
+          label="Nombre" 
+          id="nombre" 
+          register={register} 
+          error={getFieldError(errors.nombre)} 
+          required 
+          disabled={isSubmitting}
+        />
+        <Input 
+          label="Precio" 
+          id="precio" 
+          type="number" 
+          step="0.01" 
+          register={register} 
+          error={getFieldError(errors.precio)} 
+          required 
+          disabled={isSubmitting}
+        />
+        <Input 
+          label="Costo" 
+          id="costo" 
+          type="number" 
+          step="0.01" 
+          register={register} 
+          error={getFieldError(errors.costo)} 
+          required 
+          disabled={isSubmitting}
+        />
 
         <div>
           <label className="block font-medium mb-1">Categoría</label>
@@ -125,6 +161,7 @@ export const ProductoForm = ({ initialData, onSubmit, isSubmitting }: ProductoFo
             className="w-full border rounded px-3 py-2"
             value={categoriaSeleccionada}
             onChange={(e) => handleCategoriaChange(e.target.value)}
+            disabled={isSubmitting}
           >
             <option value="">-- Selecciona categoría --</option>
             {categorias.map((cat) => (
@@ -141,6 +178,7 @@ export const ProductoForm = ({ initialData, onSubmit, isSubmitting }: ProductoFo
               value={nuevaCategoria}
               onChange={handleNuevaCategoriaInput}
               required
+              disabled={isSubmitting}
             />
           )}
           {getFieldError(errors.categoria) && (
@@ -184,6 +222,7 @@ export const ProductoForm = ({ initialData, onSubmit, isSubmitting }: ProductoFo
                     );
                   }
                 }}
+                disabled={isSubmitting}
               >
                 <option value="">-- Selecciona un color --</option>
                 {colores.map((color) => (
@@ -204,6 +243,7 @@ export const ProductoForm = ({ initialData, onSubmit, isSubmitting }: ProductoFo
                     setValue(`variantes.${index}.color`, e.target.value)
                   }
                   required
+                  disabled={isSubmitting}
                 />
               )}
 
@@ -227,6 +267,7 @@ export const ProductoForm = ({ initialData, onSubmit, isSubmitting }: ProductoFo
                     );
                   }
                 }}
+                disabled={isSubmitting}
               >
                 <option value="">-- Selecciona una talla --</option>
                 {tallas.map((talla) => (
@@ -247,6 +288,7 @@ export const ProductoForm = ({ initialData, onSubmit, isSubmitting }: ProductoFo
                     setValue(`variantes.${index}.talla`, e.target.value)
                   }
                   required
+                  disabled={isSubmitting}
                 />
               )}
 
@@ -258,6 +300,7 @@ export const ProductoForm = ({ initialData, onSubmit, isSubmitting }: ProductoFo
                 register={register}
                 error={(errors.variantes as any)?.[index]?.stock}
                 required
+                disabled={isSubmitting}
               />
 
               <Button
@@ -265,6 +308,7 @@ export const ProductoForm = ({ initialData, onSubmit, isSubmitting }: ProductoFo
                 variant="destructive"
                 onClick={() => remove(index)}
                 className="mt-1"
+                disabled={isSubmitting}
               >
                 Eliminar Variante
               </Button>
@@ -276,11 +320,11 @@ export const ProductoForm = ({ initialData, onSubmit, isSubmitting }: ProductoFo
           type="button"
           variant="outline"
           onClick={() => append({ color: '', talla: '', stock: 0 })}
+          disabled={isSubmitting}
         >
           Agregar Variante
         </Button>
       </div>
-
 
       <Input
         label="Descripción"
@@ -288,6 +332,7 @@ export const ProductoForm = ({ initialData, onSubmit, isSubmitting }: ProductoFo
         register={register}
         error={getFieldError(errors.descripcion)}
         multiline
+        disabled={isSubmitting}
       />
 
       <Button type="submit" disabled={isSubmitting}>
@@ -301,6 +346,7 @@ export const ProductoForm = ({ initialData, onSubmit, isSubmitting }: ProductoFo
             variant="outline"
             className="w-full mt-4"
             onClick={() => setMostrarVarianteModal(true)}
+            disabled={isSubmitting}
           >
             ➕ Agregar variante a este producto
           </Button>
@@ -311,18 +357,12 @@ export const ProductoForm = ({ initialData, onSubmit, isSubmitting }: ProductoFo
               onClose={() => setMostrarVarianteModal(false)}
               onSuccess={() => {
                 setMostrarVarianteModal(false);
-                // Podés refrescar variantes, reconsultar API, etc.
+                // Aquí podrías actualizar las variantes si es necesario
               }}
             />
           )}
         </>
       )}
-
     </form>
-
-
   );
-
 };
-
-

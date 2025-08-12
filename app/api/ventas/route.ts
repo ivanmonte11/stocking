@@ -1,9 +1,18 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient, TipoMovimiento, TipoTransaccion } from '@prisma/client';
+import { cookies } from 'next/headers';
+import { getTokenData } from '@/lib/auth';
 
 const prisma = new PrismaClient();
 
 export async function POST(request: Request) {
+  const token = cookies().get('token')?.value;
+  if (!token) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+
+  const user = await getTokenData(token);
+  if (!user?.id || !user?.tenantId) {
+    return NextResponse.json({ error: 'Usuario inválido' }, { status: 400 });
+  }
   try {
     const body = await request.json();
     const { variantes, motivo, usuario, cliente } = body;
@@ -38,27 +47,18 @@ export async function POST(request: Request) {
           nombre: cliente.nombre,
           telefono: cliente.telefono || '',
           email: cliente.email || '',
+          tenant: {
+            connect: { id: user.tenantId }
+          }
         },
       });
+
     }
 
-    const ventas: {
-      varianteId: number;
-      clienteId: number;
-      cantidad: number;
-      precio_unitario?: number;
-      fecha: Date;
-    }[] = [];
+    const ventas = [];
 
-    const movimientos: {
-      producto_id: number;
-      varianteId: number;
-      cantidad: number;
-      tipo_movimiento: TipoMovimiento;
-      motivo: string;
-      usuario: string;
-      fecha: Date;
-    }[] = [];
+    const movimientos = [];
+
 
     let totalCantidad = 0;
 
@@ -92,22 +92,28 @@ export async function POST(request: Request) {
       }
 
       ventas.push({
-        varianteId: variante.id,
-        clienteId: clienteExistente.id,
         cantidad: v.cantidad,
-        precio_unitario: v.precio_unitario,
+        precioUnitario: v.precio_unitario,
         fecha: new Date(),
+        variante: { connect: { id: variante.id } },
+        cliente: { connect: { id: clienteExistente.id } },
+        tenant: { connect: { id: user.tenantId } },
       });
 
+
       movimientos.push({
-        producto_id: variante.productoId,
-        varianteId: variante.id,
         cantidad: v.cantidad,
-        tipo_movimiento: TipoMovimiento.SALIDA,
+        tipoMovimiento: TipoMovimiento.SALIDA,
         motivo: motivo || 'Venta',
-        usuario: usuario || 'sistema',
+        usuario: {
+          connect: { id: user.id }
+        },
         fecha: new Date(),
+        producto: { connect: { id: variante.productoId } },
+        variante: { connect: { id: variante.id } },
+        tenant: { connect: { id: user.tenantId } },
       });
+
 
       await prisma.varianteProducto.update({
         where: { id: variante.id },
@@ -126,6 +132,8 @@ export async function POST(request: Request) {
       data: {
         tipo: TipoTransaccion.VENTA,
         clienteId: clienteExistente.id,
+        usuarioId: user.id,
+        tenantId: user.tenantId,
         fecha: new Date(),
         total: totalCantidad,
         ventas: { create: ventas },
@@ -144,6 +152,7 @@ export async function POST(request: Request) {
         },
       },
     });
+
 
     return NextResponse.json(
       {

@@ -1,32 +1,43 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { cookies } from 'next/headers';
+import { getTokenData } from '@/lib/auth';
 
 export async function GET() {
   try {
-    // 📦 Productos totales y con stock bajo
-    const totalProducts = await prisma.producto.count();
+    const token = cookies().get('token')?.value;
+    if (!token) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+
+    const user = await getTokenData(token);
+    if (!user?.tenantId) return NextResponse.json({ error: 'Tenant no definido' }, { status: 400 });
+
+    const { tenantId } = user;
+
+    // 📦 Productos
+    const totalProducts = await prisma.producto.count({
+      where: { tenantId }
+    });
 
     const lowStockItems = await prisma.producto.count({
       where: {
+        tenantId,
         variantes: {
           some: {
-            stock: {
-              lt: 5,
-            },
-          },
-        },
-      },
+            stock: { lt: 5 }
+          }
+        }
+      }
     });
 
     // 🔄 Movimientos de stock de hoy
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-
     const endOfToday = new Date();
     endOfToday.setHours(23, 59, 59, 999);
 
     const todayTransactions = await prisma.transaccion.count({
       where: {
+        tenantId,
         fecha: {
           gte: today,
           lte: endOfToday,
@@ -48,6 +59,11 @@ export async function GET() {
           gte: startOfMonth,
           lte: endOfMonth,
         },
+        variante: {
+          producto: {
+            tenantId,
+          },
+        },
       },
       include: {
         variante: {
@@ -60,22 +76,16 @@ export async function GET() {
 
     const monthlySales = ventasDelMes.length;
 
-    const monthlyRevenue = ventasDelMes.reduce(
-      (total: number, venta: typeof ventasDelMes[number]) => {
-        const precio = venta.variante?.producto?.precio || 0;
-        return total + venta.cantidad * precio;
-      },
-      0
-    );
+    const monthlyRevenue = ventasDelMes.reduce((total, venta) => {
+      const precio = venta.variante?.producto?.precio || 0;
+      return total + venta.cantidad * precio;
+    }, 0);
 
-    const monthlyProfit = ventasDelMes.reduce(
-      (total: number, venta: typeof ventasDelMes[number]) => {
-        const precio = venta.variante?.producto?.precio || 0;
-        const costo = venta.variante?.producto?.costo || 0;
-        return total + venta.cantidad * (precio - costo);
-      },
-      0
-    );
+    const monthlyProfit = ventasDelMes.reduce((total, venta) => {
+      const precio = venta.variante?.producto?.precio || 0;
+      const costo = venta.variante?.producto?.costo || 0;
+      return total + venta.cantidad * (precio - costo);
+    }, 0);
 
     // 🧾 Ventas del mes anterior
     const ventasMesAnterior = await prisma.venta.count({
@@ -83,6 +93,11 @@ export async function GET() {
         fecha: {
           gte: startOfLastMonth,
           lte: endOfLastMonth,
+        },
+        variante: {
+          producto: {
+            tenantId,
+          },
         },
       },
     });
@@ -92,6 +107,11 @@ export async function GET() {
         fecha: {
           gte: startOfLastMonth,
           lte: endOfLastMonth,
+        },
+        variante: {
+          producto: {
+            tenantId,
+          },
         },
       },
       include: {
@@ -103,22 +123,16 @@ export async function GET() {
       },
     });
 
-    const revenueLastMonth = ventasMesAnteriorDetalladas.reduce(
-      (total: number, venta: typeof ventasMesAnteriorDetalladas[number]) => {
-        const precio = venta.variante?.producto?.precio || 0;
-        return total + venta.cantidad * precio;
-      },
-      0
-    );
+    const revenueLastMonth = ventasMesAnteriorDetalladas.reduce((total, venta) => {
+      const precio = venta.variante?.producto?.precio || 0;
+      return total + venta.cantidad * precio;
+    }, 0);
 
-    const profitLastMonth = ventasMesAnteriorDetalladas.reduce(
-      (total: number, venta: typeof ventasMesAnteriorDetalladas[number]) => {
-        const precio = venta.variante?.producto?.precio || 0;
-        const costo = venta.variante?.producto?.costo || 0;
-        return total + venta.cantidad * (precio - costo);
-      },
-      0
-    );
+    const profitLastMonth = ventasMesAnteriorDetalladas.reduce((total, venta) => {
+      const precio = venta.variante?.producto?.precio || 0;
+      const costo = venta.variante?.producto?.costo || 0;
+      return total + venta.cantidad * (precio - costo);
+    }, 0);
 
     const revenueGrowth =
       revenueLastMonth > 0
@@ -135,10 +149,13 @@ export async function GET() {
         : 0;
 
     // 🧍‍♂️ Clientes
-    const totalCustomers = await prisma.cliente.count();
+    const totalCustomers = await prisma.cliente.count({
+      where: { tenantId }
+    });
 
     const customersThisMonth = await prisma.cliente.count({
       where: {
+        tenantId,
         createdAt: {
           gte: startOfMonth,
           lte: endOfMonth,
@@ -148,6 +165,7 @@ export async function GET() {
 
     const customersLastMonth = await prisma.cliente.count({
       where: {
+        tenantId,
         createdAt: {
           gte: startOfLastMonth,
           lte: endOfLastMonth,
