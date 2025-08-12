@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
+import { getUserFromCookies } from '@/lib/getUserFromCookies';
 
 export async function GET(req: Request, { params }: { params: { id: string } }) {
   try {
@@ -59,24 +60,29 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     }
 
     // Crear variante + movimiento dentro de una transacción
+    const user = await getUserFromCookies();
+
     const resultado = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const nuevaVariante = await tx.varianteProducto.create({
         data: {
           productoId,
           color: color.trim(),
           talla: talla.trim(),
-          stock: parseInt(stock),
-        },
+          stock,
+          tenantId: user.tenantId
+        }
+
       });
 
       const movimiento = await tx.movimientoStock.create({
         data: {
-          producto_id: productoId,
+          productoId: productoId,
           varianteId: nuevaVariante.id,
           cantidad: parseInt(stock),
-          tipo_movimiento: 'ENTRADA',
+          tipoMovimiento: 'ENTRADA',
           motivo: `Carga inicial de nueva variante ${color}-${talla}`,
           usuario,
+          tenantId: user.tenantId
         },
       });
 

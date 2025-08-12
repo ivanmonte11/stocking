@@ -2,25 +2,14 @@ import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { productoSchema } from '@/lib/validations/productoSchema';
 import { v4 as uuidv4 } from 'uuid';
-import { getTokenData } from '@/lib/auth';
-import { cookies } from 'next/headers';
+import { getUserFromCookies } from '@/lib/getUserFromCookies';
 
 const prisma = new PrismaClient();
-
-// 🔐 Helper para obtener datos del usuario desde el token
-export async function getUserToken() {
-  const cookieStore = cookies();
-  const token = cookieStore.get('token')?.value;
-
-  if (!token) throw new Error('No autorizado');
-
-  return await getTokenData(token);
-}
 
 // 📦 GET: Obtener productos paginados del tenant actual
 export async function GET(request: Request) {
   try {
-    const user = await getUserToken();
+    const user = await getUserFromCookies();
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1', 10);
     const limit = parseInt(searchParams.get('limit') || '10', 10);
@@ -40,7 +29,7 @@ export async function GET(request: Request) {
     });
 
     return NextResponse.json({
-      data: productos, // codigoBarra siempre se incluirá porque es parte del modelo
+      data: productos,
       pagination: {
         page,
         limit,
@@ -57,9 +46,10 @@ export async function GET(request: Request) {
   }
 }
 
+// 🧾 POST: Crear producto y transacción inicial
 export async function POST(request: Request) {
   try {
-    const user = await getUserToken();
+    const user = await getUserFromCookies();
     const body = await request.json();
 
     const parsedBody = {
@@ -72,13 +62,11 @@ export async function POST(request: Request) {
       })),
     };
 
-    // Unificamos siempre codigoBarra (sin guion bajo)
     const validatedData = productoSchema.parse({
       ...parsedBody,
       codigoBarra: parsedBody.codigoBarra?.trim() || uuidv4().slice(0, 12).toUpperCase(),
     });
 
-    // 🛠️ Crear producto con variantes, incluyendo tenantId
     const producto = await prisma.producto.create({
       data: {
         codigoBarra: validatedData.codigoBarra,
@@ -102,13 +90,8 @@ export async function POST(request: Request) {
     });
 
     const variantesConStock = producto.variantes.filter(v => v.stock > 0);
+    const totalStock = variantesConStock.reduce((acc, v) => acc + v.stock, 0);
 
-    const totalStock = variantesConStock.reduce(
-      (acc, variante) => acc + variante.stock,
-      0
-    );
-
-    // 🧾 Crear transacción con movimientos, incluyendo tenantId
     const transaccion = await prisma.transaccion.create({
       data: {
         tipo: 'COMPRA',

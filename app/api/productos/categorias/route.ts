@@ -26,9 +26,12 @@ export async function GET() {
       distinct: ['categoria'],
     });
 
-    const valores = categorias
-  .map((c: { categoria: string | null }) => c.categoria?.trim())
-  .filter(Boolean) as string[];
+  const valores = Array.from(new Set(
+  categorias
+    .map((c) => c.categoria?.trim())
+    .filter(Boolean)
+));
+
 
 
     return NextResponse.json({ data: valores });

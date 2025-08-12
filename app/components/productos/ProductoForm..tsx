@@ -99,6 +99,8 @@ export const ProductoForm = ({ initialData, onSubmit, isSubmitting }: ProductoFo
     setValue('categoria', nueva);
   };
 
+  const categoriasUnicas = Array.from(new Set(categorias));
+
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -156,35 +158,47 @@ export const ProductoForm = ({ initialData, onSubmit, isSubmitting }: ProductoFo
         />
 
         <div>
-          <label className="block font-medium mb-1">Categoría</label>
-          <select
-            className="w-full border rounded px-3 py-2"
-            value={categoriaSeleccionada}
-            onChange={(e) => handleCategoriaChange(e.target.value)}
-            disabled={isSubmitting}
-          >
-            <option value="">-- Selecciona categoría --</option>
-            {categorias.map((cat) => (
-              <option key={cat} value={cat}>{cat}</option>
-            ))}
-            <option value="__nueva__">➕ Agregar nueva categoría</option>
-          </select>
+  <label className="block font-medium mb-1">Categoría</label>
 
-          {categoriaSeleccionada === '__nueva__' && (
-            <input
-              type="text"
-              placeholder="Nueva categoría"
-              className="mt-2 w-full border rounded px-3 py-2"
-              value={nuevaCategoria}
-              onChange={handleNuevaCategoriaInput}
-              required
-              disabled={isSubmitting}
-            />
-          )}
-          {getFieldError(errors.categoria) && (
-            <p className="text-sm text-red-600 mt-1">{getFieldError(errors.categoria)?.message}</p>
-          )}
-        </div>
+  {/** 🔍 Deduplicación directa */}
+ 
+
+  <select
+    className="w-full border rounded px-3 py-2"
+    value={categoriaSeleccionada}
+    onChange={(e) => handleCategoriaChange(e.target.value)}
+    disabled={isSubmitting}
+  >
+    <option value="">-- Selecciona categoría --</option>
+
+    {categoriasUnicas.map((cat) => (
+      <option key={cat} value={cat}>
+        {cat}
+      </option>
+    ))}
+
+    <option value="__nueva__">➕ Agregar nueva categoría</option>
+  </select>
+
+  {categoriaSeleccionada === '__nueva__' && (
+    <input
+      type="text"
+      placeholder="Nueva categoría"
+      className="mt-2 w-full border rounded px-3 py-2"
+      value={nuevaCategoria}
+      onChange={handleNuevaCategoriaInput}
+      required
+      disabled={isSubmitting}
+    />
+  )}
+
+  {getFieldError(errors.categoria) && (
+    <p className="text-sm text-red-600 mt-1">
+      {getFieldError(errors.categoria)?.message}
+    </p>
+  )}
+</div>
+
       </div>
 
       <div>

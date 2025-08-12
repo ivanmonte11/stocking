@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { cookies } from 'next/headers';
 import { getTokenData } from '@/lib/auth';
+import { getUserFromCookies } from '@/lib/getUserFromCookies';
 
 export const runtime = 'nodejs'; 
 
@@ -37,13 +38,23 @@ export async function GET() {
 
 // POST: crear cliente
 export async function POST(req: Request) {
+  
+  const user = await getUserFromCookies();
+
   try {
     const body = await req.json();
     const { nombre, telefono } = body;
 
     const nuevoCliente = await prisma.cliente.create({
-      data: { nombre, telefono },
-    });
+  data: {
+    nombre,
+    telefono,
+    tenant: {
+      connect: { id: user.tenantId } // ← asumimos que tenés acceso al user
+    }
+  }
+});
+
 
     return NextResponse.json(nuevoCliente, { status: 201 });
   } catch (error) {
