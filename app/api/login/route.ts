@@ -75,8 +75,8 @@ export async function POST(request: Request) {
 
     response.cookies.set('token', token, {
   httpOnly: true,
-  secure: true, // 🔒 obligatorio en Vercel
-  sameSite: 'none', // 🔥 necesario para que el navegador la acepte
+  secure: true, 
+  sameSite: 'none', 
   path: '/',
   maxAge: 60 * 60 * 8
 });
