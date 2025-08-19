@@ -33,7 +33,8 @@ export default function RegisterPage() {
       }
   
       // Redirigir a login después de registro exitoso
-      router.push('/auth/login?registered=true');
+      router.push('/activacion');
+
       
     } catch (err: any) {
       setError(err.message || 'Error al registrar usuario');

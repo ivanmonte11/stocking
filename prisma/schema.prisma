@@ -21,16 +21,23 @@ model Tenant {
   movimientosStock  MovimientoStock[]
 }
 
+enum EstadoUsuario {
+  pending
+  active
+  archived
+}
+
 model User {
   id           Int               @id @default(autoincrement())
   name         String
   email        String            @unique
   password     String
   role         String            @default("user")
+  status       EstadoUsuario     @default(pending)
   createdAt    DateTime          @default(now()) @map("fecha_creacion")
   updatedAt    DateTime          @updatedAt @map("fecha_actualizacion")
-  tenantId     Int
-  tenant       Tenant            @relation(fields: [tenantId], references: [id])
+  tenantId     Int?
+  tenant       Tenant?            @relation(fields: [tenantId], references: [id])
 
   productos     Producto[]
   transacciones Transaccion[]    @relation("UsuarioTransacciones")

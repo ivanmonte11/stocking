@@ -26,7 +26,8 @@ export async function POST(request: Request) {
         password: true,
         role: true,
         tenantId: true,
-        createdAt: true
+        createdAt: true,
+        status: true // 👈 agregado para verificación
       }
     });
 
@@ -42,6 +43,14 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { error: 'Credenciales inválidas' },
         { status: 401 }
+      );
+    }
+
+    // 👮‍♂️ Verificación editorial del estado
+    if (user.status !== 'active') {
+      return NextResponse.json(
+        { error: 'Cuenta no activada. Completá el proceso para acceder.' },
+        { status: 403 }
       );
     }
 
@@ -63,24 +72,22 @@ export async function POST(request: Request) {
       email: user.email,
       role: user.role,
       tenantId: user.tenantId,
-      createdAt: user.createdAt
+      createdAt: user.createdAt,
+      status: user.status // 👈 opcional para frontend
     };
 
-    // 🧁 Respuesta con cookie
     const response = NextResponse.json({
       success: true,
-      user: userData,
-
+      user: userData
     });
 
     response.cookies.set('token', token, {
-  httpOnly: true,
-  secure: true, 
-  sameSite: 'none', 
-  path: '/',
-  maxAge: 60 * 60 * 8
-});
-
+      httpOnly: true,
+      secure: true,
+      sameSite: 'none',
+      path: '/',
+      maxAge: 60 * 60 * 8
+    });
 
     return response;
 

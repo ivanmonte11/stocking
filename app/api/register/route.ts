@@ -35,11 +35,8 @@ export async function POST(request: Request) {
         name,
         email,
         password: hashedPassword,
-        tenant: {
-          create: {
-            nombre: `${name}'s tenant`,
-          }
-        }
+        status: 'pending' // 👈 usuario queda en estado pendiente
+        // tenant se crea después del pago
       },
       select: {
         id: true,
@@ -47,18 +44,17 @@ export async function POST(request: Request) {
         email: true,
         role: true,
         createdAt: true,
-        tenantId: true
+        status: true // 👈 opcional para mostrar en frontend
       }
     });
 
-    // Generar token JWT para autologin después del registro
     const token = jwt.sign(
       {
         id: newUser.id,
         name: newUser.name,
         email: newUser.email,
-        role: newUser.role,
-        tenantId: newUser.tenantId
+        role: newUser.role
+        // tenantId se asignará tras activación
       },
       JWT_SECRET,
       { expiresIn: '8h' }
