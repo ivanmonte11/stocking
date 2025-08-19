@@ -16,9 +16,10 @@ interface ProductsTableProps {
   }>;
   currentPage: number;
   totalPages: number;
+  modoArchivado?: boolean;
 }
 
-export const ProductsTable = ({ productos, currentPage, totalPages }: ProductsTableProps) => {
+export const ProductsTable = ({ productos, currentPage, totalPages, modoArchivado }: ProductsTableProps) => {
   const router = useRouter();
 
   return (
@@ -70,7 +71,7 @@ export const ProductsTable = ({ productos, currentPage, totalPages }: ProductsTa
                             const response = await fetch(`/api/productos/${producto.id}`, {
                               method: 'DELETE',
                             });
-                            
+
                             if (response.ok) {
                               router.refresh();
                             }
@@ -84,6 +85,32 @@ export const ProductsTable = ({ productos, currentPage, totalPages }: ProductsTa
                     >
                       <FiTrash2 />
                     </button>
+
+                    {modoArchivado && (
+                      <button
+                        onClick={async () => {
+                          try {
+                            const response = await fetch(`/api/productos/${producto.id}`, {
+                              method: 'PATCH',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ estado: 'activo' }),
+                            });
+
+                            if (response.ok) {
+                              router.refresh();
+                            } else {
+                              console.error('Error al activar producto');
+                            }
+                          } catch (error) {
+                            console.error('Error al activar producto:', error);
+                          }
+                        }}
+                        className="text-yellow-600 hover:text-yellow-800"
+                        title="Activar"
+                      >
+                        Activar
+                      </button>
+                    )}
                   </div>
                 </td>
               </tr>
@@ -91,12 +118,9 @@ export const ProductsTable = ({ productos, currentPage, totalPages }: ProductsTa
           </tbody>
         </table>
       </div>
-      
+
       <div className="px-6 py-4 border-t border-gray-200">
-        <Pagination 
-          currentPage={currentPage}
-          totalPages={totalPages}
-        />
+        <Pagination currentPage={currentPage} totalPages={totalPages} />
       </div>
     </div>
   );

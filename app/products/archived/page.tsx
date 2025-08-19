@@ -11,7 +11,7 @@ async function getUserToken() {
   return await getTokenData(token);
 }
 
-export default async function ProductsPage({
+export default async function ArchivedProductsPage({
   searchParams,
 }: {
   searchParams: { [key: string]: string | string[] | undefined };
@@ -24,7 +24,7 @@ export default async function ProductsPage({
   const productos = await prisma.producto.findMany({
     where: {
       tenantId: user.tenantId,
-      estado: 'activo',
+      estado: 'archivado',
     },
     skip: (page - 1) * limit,
     take: limit,
@@ -35,7 +35,7 @@ export default async function ProductsPage({
   const total = await prisma.producto.count({
     where: {
       tenantId: user.tenantId,
-      estado: 'activo',
+      estado: 'archivado',
     },
   });
 
@@ -51,18 +51,12 @@ export default async function ProductsPage({
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Gestión de Productos</h1>
+        <h1 className="text-2xl font-bold">Productos Archivados</h1>
         <a 
-          href="/products/new" 
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
-        >
-          Añadir Producto
-        </a>
-        <a 
-          href="/products/archived" 
+          href="/products" 
           className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 transition"
         >
-          Productos Archivados
+          Volver a Activos
         </a>
       </div>
       
@@ -71,7 +65,7 @@ export default async function ProductsPage({
           productos={productosConStock} 
           currentPage={page}
           totalPages={Math.ceil(total / limit)}
-          modoArchivado={false}
+          modoArchivado={true}
         />
       </div>
     </div>

@@ -35,6 +35,7 @@ export const productoSchema = z.object({
       stock: numberLike,
     })
   ),
+   estado: z.enum(['activo', 'archivado']),
 });
 
 

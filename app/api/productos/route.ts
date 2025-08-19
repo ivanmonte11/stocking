@@ -15,18 +15,25 @@ export async function GET(request: Request) {
     const limit = parseInt(searchParams.get('limit') || '10', 10);
 
     const productos = await prisma.producto.findMany({
-      where: { tenantId: user.tenantId },
-      skip: (page - 1) * limit,
-      take: limit,
-      orderBy: { fechaCreacion: 'desc' },
-      include: {
-        variantes: true,
-      },
-    });
+  where: {
+    tenantId: user.tenantId,
+    estado: 'activo', // ← filtro editorial
+  },
+  skip: (page - 1) * limit,
+  take: limit,
+  orderBy: { fechaCreacion: 'desc' },
+  include: {
+    variantes: true,
+  },
+});
 
-    const total = await prisma.producto.count({
-      where: { tenantId: user.tenantId },
-    });
+const total = await prisma.producto.count({
+  where: {
+    tenantId: user.tenantId,
+    estado: 'activo', // ← coherencia en la paginación
+  },
+});
+
 
     return NextResponse.json({
       data: productos,
