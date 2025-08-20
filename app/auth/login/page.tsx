@@ -10,11 +10,15 @@ export default function LoginPage() {
   const { login } = useAuth();
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [estadoPendiente, setEstadoPendiente] = useState(false);
+  const [emailPendiente, setEmailPendiente] = useState('');
 
   const handleLogin = async (data: { email: string; password: string }) => {
     console.log('[FRONT] Iniciando login con datos:', data);
     setIsSubmitting(true);
     setError('');
+    setEstadoPendiente(false);
+    setEmailPendiente('');
 
     try {
       const response = await fetch('/api/login', {
@@ -28,7 +32,20 @@ export default function LoginPage() {
       console.log('[FRONT] Respuesta del servidor:', result);
 
       if (!response.ok) {
-        throw new Error(result.error || 'Credenciales incorrectas');
+        let mensaje = 'Error al iniciar sesión';
+
+        if (result.error?.includes('no activada')) {
+          mensaje = 'Tu cuenta fue registrada pero no está activa. Podés completar el pago ahora para acceder.';
+          setEstadoPendiente(true);
+          setEmailPendiente(result.email);
+        } else if (result.error?.includes('Licencia vencida')) {
+          mensaje = 'Tu licencia venció. Renovala para seguir usando el sistema.';
+        } else if (result.error?.includes('Credenciales inválidas')) {
+          mensaje = 'Email o contraseña incorrectos.';
+        }
+
+        setError(mensaje);
+        return;
       }
 
       localStorage.setItem('token', result.token);
@@ -48,11 +65,27 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center">
       <div className="w-full max-w-md p-8 space-y-8 bg-white rounded-lg shadow">
         <h1 className="text-2xl font-bold text-center">Iniciar Sesión</h1>
-        {error && <p className="text-red-500 text-center">{error}</p>}
+
+        {error && (
+          <div className="text-red-600 text-center flex flex-col items-center gap-2">
+            <div className="flex items-center gap-2">
+              <span>⚠️</span>
+              <p>{error}</p>
+            </div>
+
+            {estadoPendiente && (
+              <button
+                className="mt-2 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                onClick={() => router.push(`/pago?email=${emailPendiente}`)}
+              >
+                Reanudar pago
+              </button>
+            )}
+          </div>
+        )}
 
         <LoginForm onSubmit={handleLogin} isSubmitting={isSubmitting} />
 
-        {/* 🔗 Enlace al registro */}
         <p className="text-center text-sm text-gray-600">
           ¿No tienes una cuenta?{' '}
           <Link href="/auth/register" className="text-blue-600 hover:underline">

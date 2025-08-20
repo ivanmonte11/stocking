@@ -27,7 +27,8 @@ export async function POST(request: Request) {
         role: true,
         tenantId: true,
         createdAt: true,
-        status: true // 👈 agregado para verificación
+        status: true, // para verificación
+        accesoHasta: true, // Necesario para validar
       }
     });
 
@@ -46,10 +47,23 @@ export async function POST(request: Request) {
       );
     }
 
-    // 👮‍♂️ Verificación editorial del estado
+    // Verificación editorial del estado
     if (user.status !== 'active') {
+  return NextResponse.json(
+    {
+      error: 'Cuenta no activada. Completá el proceso para acceder.',
+      estado: 'pendiente',
+      email: user.email
+    },
+    { status: 403 }
+  );
+}
+
+
+    //  Verificación de acceso vigente
+    if (!user.accesoHasta || user.accesoHasta < new Date()) {
       return NextResponse.json(
-        { error: 'Cuenta no activada. Completá el proceso para acceder.' },
+        { error: 'Licencia vencida. Necesitás renovarla para acceder.' },
         { status: 403 }
       );
     }
@@ -73,7 +87,7 @@ export async function POST(request: Request) {
       role: user.role,
       tenantId: user.tenantId,
       createdAt: user.createdAt,
-      status: user.status // 👈 opcional para frontend
+      status: user.status // opcional para frontend
     };
 
     const response = NextResponse.json({

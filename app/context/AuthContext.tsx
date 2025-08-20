@@ -9,6 +9,7 @@ interface UserData {
   email: string;
   role: string;
   tenantId: number;
+  accesoHasta?: string;
 }
 
 interface AuthContextType {

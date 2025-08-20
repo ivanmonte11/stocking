@@ -1,4 +1,3 @@
-// app/api/mercadopago/webhook/route.ts
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 
@@ -13,7 +12,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ ignored: true }, { status: 200 });
     }
 
-    // Consultar detalles del pago a MercadoPago
+    //  Consultar detalles del pago
     const res = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
       headers: {
         Authorization: `Bearer ${process.env.MP_ACCESS_TOKEN}`
@@ -27,31 +26,38 @@ export async function POST(request: Request) {
     }
 
     const email = payment.external_reference;
+    const user = await prisma.user.findUnique({ where: { email } });
 
-    const user = await prisma.user.findUnique({
-      where: { email }
-    });
-
-    if (!user || user.status !== 'pending') {
+    if (!user) {
       return NextResponse.json({ ignored: true }, { status: 200 });
     }
 
-    // Activar usuario y crear tenant
+    //  Calcular nueva fecha de acceso
+    const hoy = new Date();
+    const base = user.accesoHasta && user.accesoHasta > hoy ? user.accesoHasta : hoy;
+    const nuevaFecha = new Date(base);
+    nuevaFecha.setMonth(nuevaFecha.getMonth() + 1); // suma 1 mes
+
+    //  Actualizar acceso y activar si estaba pendiente
     const updatedUser = await prisma.user.update({
       where: { email },
       data: {
-        status: 'active',
-        tenant: {
-          create: {
-            nombre: `${user.name}'s tenant`
-          }
-        }
+        accesoHasta: nuevaFecha,
+        status: user.status === 'pending' ? 'active' : user.status,
+        tenant: user.tenantId
+          ? undefined
+          : {
+              create: {
+                nombre: `${user.name}'s tenant`
+              }
+            }
       },
       select: {
         id: true,
         name: true,
         email: true,
         status: true,
+        accesoHasta: true,
         tenantId: true
       }
     });

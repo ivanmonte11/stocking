@@ -34,6 +34,7 @@ model User {
   password     String
   role         String            @default("user")
   status       EstadoUsuario     @default(pending)
+  accesoHasta  DateTime?
   createdAt    DateTime          @default(now()) @map("fecha_creacion")
   updatedAt    DateTime          @updatedAt @map("fecha_actualizacion")
   tenantId     Int?

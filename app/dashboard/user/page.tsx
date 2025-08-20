@@ -7,6 +7,8 @@ import { useAuth } from '@/context/AuthContext';
 import { FiPackage, FiAlertTriangle, FiRefreshCw, FiDollarSign, FiUsers, FiTrendingUp, FiPieChart } from 'react-icons/fi';
 import VentasMensualesChart from '@/components/sales/VentasMensualesChart';
 import { FiList } from 'react-icons/fi';
+import AvisoRenovacion from '@/components/aviso/AvisoRenovacion';
+
 
 
 interface DashboardStats {
@@ -145,7 +147,8 @@ export default function UserDashboard() {
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-6">Gestión de Indumentaria</h1>
-
+      {/* 🟡 Aviso editorial de renovación */}
+      {user?.accesoHasta && <AvisoRenovacion accesoHasta={user.accesoHasta} />}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
         <DashboardCard title="Productos Totales" value={stats.products.toString()} icon={<FiPackage className="text-blue-500" size={24} />} trend="up" percentage="-" />
         <DashboardCard title="Stock Crítico" value={stats.lowStock.toString()} icon={<FiAlertTriangle className="text-red-500" size={24} />} alert trend="up" percentage={`${Math.abs(stats.lowStockGrowth).toFixed(1)}%`} />
@@ -207,7 +210,7 @@ export default function UserDashboard() {
             </table>
           </div>
         </section>
-        
+
 
         <section className="bg-white p-6 rounded-lg shadow">
           <h2 className="text-xl font-semibold mb-4">Acciones Rápidas</h2>
@@ -230,9 +233,9 @@ export default function UserDashboard() {
             >
               <FiRefreshCw /> Registrar Movimiento
             </button>
-           <button
-            onClick={() => router.push('/dashboard/movimiento/historial/')}
-            className="w-full bg-yellow-100 text-yellow-700 hover:bg-yellow-200 flex items-center justify-center gap-2 py-2 px-4 rounded transition"
+            <button
+              onClick={() => router.push('/dashboard/movimiento/historial/')}
+              className="w-full bg-yellow-100 text-yellow-700 hover:bg-yellow-200 flex items-center justify-center gap-2 py-2 px-4 rounded transition"
             >
               <FiList /> Historial de Movimientos
             </button>
@@ -257,11 +260,11 @@ export default function UserDashboard() {
             </button>
           </div>
         </section>
-         {/* Gráfico de Ventas Mensuales */}
-      <VentasMensualesChart />
+        {/* Gráfico de Ventas Mensuales */}
+        <VentasMensualesChart />
       </div>
     </div>
-    
+
   );
 }
 

@@ -29,7 +29,7 @@ export async function GET() {
       }
     });
 
-    // 🔄 Movimientos de stock de hoy
+    //  Movimientos de stock de hoy
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const endOfToday = new Date();
@@ -45,14 +45,14 @@ export async function GET() {
       },
     });
 
-    // 📅 Fechas clave
+    //  Fechas clave
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
     const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
 
-    // 🧾 Ventas del mes actual
+    //  Ventas del mes actual
     const ventasDelMes = await prisma.venta.findMany({
       where: {
         fecha: {
@@ -87,7 +87,7 @@ export async function GET() {
       return total + venta.cantidad * (precio - costo);
     }, 0);
 
-    // 🧾 Ventas del mes anterior
+    //  Ventas del mes anterior
     const ventasMesAnterior = await prisma.venta.count({
       where: {
         fecha: {
