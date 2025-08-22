@@ -92,7 +92,8 @@ export async function POST(request: Request) {
 
     const response = NextResponse.json({
       success: true,
-      user: userData
+      user: userData,
+      token
     });
 
     response.cookies.set('token', token, {
