@@ -35,8 +35,7 @@ export async function POST(request: Request) {
         name,
         email,
         password: hashedPassword,
-        status: 'pending' // 👈 usuario queda en estado pendiente
-        // tenant se crea después del pago
+        status: 'pending' //  usuario queda en estado pendiente
       },
       select: {
         id: true,
@@ -44,7 +43,7 @@ export async function POST(request: Request) {
         email: true,
         role: true,
         createdAt: true,
-        status: true // 👈 opcional para mostrar en frontend
+        status: true
       }
     });
 
@@ -54,20 +53,25 @@ export async function POST(request: Request) {
         name: newUser.name,
         email: newUser.email,
         role: newUser.role
-        // tenantId se asignará tras activación
       },
       JWT_SECRET,
       { expiresIn: '8h' }
     );
 
-    return NextResponse.json(
-      { 
-        success: true, 
-        user: newUser,
-        token 
-      },
-      { status: 201 }
-    );
+    const response = NextResponse.json({
+      success: true,
+      user: newUser
+    });
+
+    response.cookies.set('token', token, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'none',
+      path: '/',
+      maxAge: 60 * 60 * 8 // 8 horas
+    });
+
+    return response;
 
   } catch (error) {
     console.error('Error en registro:', error);
