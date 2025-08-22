@@ -10,13 +10,14 @@ export default function ActivacionPage() {
   const [plan, setPlan] = useState<'initial' | 'annual'>('initial');
 
   useEffect(() => {
-    const storedPlan = localStorage.getItem('planSeleccionado');
-    if (storedPlan === 'initial' || storedPlan === 'annual') {
-      setPlan(storedPlan);
-    } else {
-      setPlan('initial'); // fallback editorial
-    }
-  }, []);
+  const storedPlan = localStorage.getItem('planSeleccionado');
+  if (storedPlan === 'initial' || storedPlan === 'annual') {
+    setPlan(storedPlan);
+  } else {
+    setPlan('initial'); // fallback editorial
+  }
+}, []);
+
 
   const handleCheckout = async () => {
     if (!user?.email) return;
@@ -40,14 +41,8 @@ export default function ActivacionPage() {
     router.push(data.init_point);
   };
 
-  // ✅ Esperar carga antes de evaluar sesión
-  if (loading || !user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-gray-600">Verificando sesión...</p>
-      </div>
-    );
-  }
+  if (loading) return <p>Cargando...</p>;
+  if (!isAuthenticated || !user) return <p>No estás autenticado.</p>;
 
   const licenciaTexto = plan === 'annual' ? '$144.000 ARS / año' : '$15.000 ARS / mes';
   const tipoTexto = plan === 'annual' ? 'suscripción anual' : 'suscripción mensual';
