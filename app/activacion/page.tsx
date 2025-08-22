@@ -10,14 +10,20 @@ export default function ActivacionPage() {
   const [plan, setPlan] = useState<'initial' | 'annual'>('initial');
 
   useEffect(() => {
-  const storedPlan = localStorage.getItem('planSeleccionado');
-  if (storedPlan === 'initial' || storedPlan === 'annual') {
-    setPlan(storedPlan);
-  } else {
-    setPlan('initial'); // fallback editorial
-  }
-}, []);
+    const storedPlan = localStorage.getItem('planSeleccionado');
+    if (storedPlan === 'initial' || storedPlan === 'annual') {
+      setPlan(storedPlan);
+    } else {
+      setPlan('initial'); // fallback editorial
+    }
+  }, []);
 
+  // ✅ Redirección editorial si no hay sesión
+  useEffect(() => {
+    if (!loading && (!isAuthenticated || !user)) {
+      router.push('/login');
+    }
+  }, [loading, isAuthenticated, user, router]);
 
   const handleCheckout = async () => {
     if (!user?.email) return;
@@ -41,8 +47,14 @@ export default function ActivacionPage() {
     router.push(data.init_point);
   };
 
-  if (loading) return <p>Cargando...</p>;
-  if (!isAuthenticated || !user) return <p>No estás autenticado.</p>;
+  // ✅ Esperar carga antes de mostrar contenido
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-gray-600">Verificando sesión...</p>
+      </div>
+    );
+  }
 
   const licenciaTexto = plan === 'annual' ? '$144.000 ARS / año' : '$15.000 ARS / mes';
   const tipoTexto = plan === 'annual' ? 'suscripción anual' : 'suscripción mensual';
@@ -60,7 +72,7 @@ export default function ActivacionPage() {
           <li><strong>Estado actual:</strong> Cuenta pendiente de activación</li>
           <li><strong>Acceso:</strong> Bloqueado hasta confirmar suscripción</li>
           <li><strong>Licencia de uso:</strong> {licenciaTexto}</li>
-          <li><strong>Correo asociado:</strong> {user.email}</li>
+          <li><strong>Correo asociado:</strong> {user?.email}</li>
         </ul>
       </div>
 
