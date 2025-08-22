@@ -18,14 +18,6 @@ export default function ActivacionPage() {
     }
   }, []);
 
-  // ✅ Redirección editorial si no hay sesión
- useEffect(() => {
-  if (!loading && (!isAuthenticated || !user?.email)) {
-    router.push(`/pago?email=${user?.email || ''}`);
-  }
-}, [loading, isAuthenticated, user, router]);
-
-
   const handleCheckout = async () => {
     if (!user?.email) return;
 
@@ -48,8 +40,8 @@ export default function ActivacionPage() {
     router.push(data.init_point);
   };
 
-  // ✅ Esperar carga antes de mostrar contenido
-  if (loading) {
+  // ✅ Esperar carga antes de evaluar sesión
+  if (loading || !user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <p className="text-gray-600">Verificando sesión...</p>
@@ -73,7 +65,7 @@ export default function ActivacionPage() {
           <li><strong>Estado actual:</strong> Cuenta pendiente de activación</li>
           <li><strong>Acceso:</strong> Bloqueado hasta confirmar suscripción</li>
           <li><strong>Licencia de uso:</strong> {licenciaTexto}</li>
-          <li><strong>Correo asociado:</strong> {user?.email}</li>
+          <li><strong>Correo asociado:</strong> {user.email}</li>
         </ul>
       </div>
 
