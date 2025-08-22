@@ -19,11 +19,12 @@ export default function ActivacionPage() {
   }, []);
 
   // ✅ Redirección editorial si no hay sesión
-  useEffect(() => {
-    if (!loading && (!isAuthenticated || !user)) {
-      router.push('/login');
-    }
-  }, [loading, isAuthenticated, user, router]);
+ useEffect(() => {
+  if (!loading && (!isAuthenticated || !user?.email)) {
+    router.push(`/pago?email=${user?.email || ''}`);
+  }
+}, [loading, isAuthenticated, user, router]);
+
 
   const handleCheckout = async () => {
     if (!user?.email) return;
