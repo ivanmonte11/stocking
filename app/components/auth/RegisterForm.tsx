@@ -25,7 +25,7 @@ export default function RegisterForm({ onSubmit, isSubmitting }: {
   const password = watch('password');
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 bg-purple-50 border border-purple-100 rounded-xl p-8 shadow-md">
       <Input
         label="Nombre completo"
         id="name"

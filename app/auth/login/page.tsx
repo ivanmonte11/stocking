@@ -1,9 +1,11 @@
 'use client';
+
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import LoginForm from '@/components/auth/LoginForm';
+
 
 export default function LoginPage() {
   const router = useRouter();
@@ -12,13 +14,14 @@ export default function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [estadoPendiente, setEstadoPendiente] = useState(false);
   const [emailPendiente, setEmailPendiente] = useState('');
+  const [mostrarSelector, setMostrarSelector] = useState(false);
 
   const handleLogin = async (data: { email: string; password: string }) => {
-    console.log('[FRONT] Iniciando login con datos:', data);
     setIsSubmitting(true);
     setError('');
     setEstadoPendiente(false);
     setEmailPendiente('');
+    setMostrarSelector(false);
 
     try {
       const response = await fetch('/api/login', {
@@ -29,17 +32,18 @@ export default function LoginPage() {
       });
 
       const result = await response.json();
-      console.log('[FRONT] Respuesta del servidor:', result);
 
       if (!response.ok) {
         let mensaje = 'Error al iniciar sesión';
 
         if (result.error?.includes('no activada')) {
-          mensaje = 'Tu cuenta fue registrada pero no está activa. Podés completar el pago ahora para acceder.';
+          mensaje = 'Tu cuenta fue registrada pero no está activa. Elegí un plan para completar el pago.';
           setEstadoPendiente(true);
           setEmailPendiente(result.email);
+          setMostrarSelector(true);
         } else if (result.error?.includes('Licencia vencida')) {
-          mensaje = 'Tu licencia venció. Renovala para seguir usando el sistema.';
+          mensaje = 'Tu licencia venció. Renová el plan para seguir usando el sistema.';
+          setMostrarSelector(true);
         } else if (result.error?.includes('Credenciales inválidas')) {
           mensaje = 'Email o contraseña incorrectos.';
         }
@@ -54,7 +58,6 @@ export default function LoginPage() {
       login(result.token, result.user);
       router.push('/dashboard/user');
     } catch (err: any) {
-      console.error('[FRONT] Error en login:', err);
       setError(err.message || 'Error al iniciar sesión');
     } finally {
       setIsSubmitting(false);
@@ -85,6 +88,7 @@ export default function LoginPage() {
         )}
 
         <LoginForm onSubmit={handleLogin} isSubmitting={isSubmitting} />
+
 
         <p className="text-center text-sm text-gray-600">
           ¿No tienes una cuenta?{' '}

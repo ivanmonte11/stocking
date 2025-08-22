@@ -1,3 +1,4 @@
+// app/api/mercadopago/webhook/route.ts
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 
@@ -9,10 +10,11 @@ export async function POST(request: Request) {
     const topic = body.type;
 
     if (topic !== 'payment') {
+      console.warn('Webhook ignorado: tipo no es "payment"', topic);
       return NextResponse.json({ ignored: true }, { status: 200 });
     }
 
-    //  Consultar detalles del pago
+    // 🧾 Consultar detalles del pago
     const res = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
       headers: {
         Authorization: `Bearer ${process.env.MP_ACCESS_TOKEN}`
@@ -22,23 +24,32 @@ export async function POST(request: Request) {
     const payment = await res.json();
 
     if (payment.status !== 'approved') {
+      console.warn('Pago no aprobado:', payment.status);
       return NextResponse.json({ ignored: true }, { status: 200 });
     }
 
     const email = payment.external_reference;
-    const user = await prisma.user.findUnique({ where: { email } });
+    const plan = payment.metadata?.plan;
+    const meses = plan === 'annual' ? 12 : 1;
 
-    if (!user) {
+    if (!email || !['initial', 'annual'].includes(plan)) {
+      console.warn('Webhook ignorado: email o plan inválido', { email, plan });
       return NextResponse.json({ ignored: true }, { status: 200 });
     }
 
-    //  Calcular nueva fecha de acceso
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      console.warn('Usuario no encontrado en webhook:', email);
+      return NextResponse.json({ ignored: true }, { status: 200 });
+    }
+
+    // 📅 Calcular nueva fecha de acceso
     const hoy = new Date();
     const base = user.accesoHasta && user.accesoHasta > hoy ? user.accesoHasta : hoy;
     const nuevaFecha = new Date(base);
-    nuevaFecha.setMonth(nuevaFecha.getMonth() + 1); // suma 1 mes
+    nuevaFecha.setMonth(nuevaFecha.getMonth() + meses);
 
-    //  Actualizar acceso y activar si estaba pendiente
+    // 🛠️ Actualizar acceso y activar si estaba pendiente
     const updatedUser = await prisma.user.update({
       where: { email },
       data: {
@@ -62,10 +73,12 @@ export async function POST(request: Request) {
       }
     });
 
+    console.log('Webhook procesado correctamente para:', email, '→', plan, '→', nuevaFecha);
+
     return NextResponse.json({ success: true, user: updatedUser }, { status: 200 });
 
   } catch (error) {
-    console.error('Error en webhook:', error);
-    return NextResponse.json({ error: 'Error en procesamiento de webhook' }, { status: 500 });
+    console.error('Error en procesamiento de webhook:', error);
+    return NextResponse.json({ error: 'Error interno en webhook' }, { status: 500 });
   }
 }

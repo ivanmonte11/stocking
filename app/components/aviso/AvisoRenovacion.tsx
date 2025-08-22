@@ -25,7 +25,7 @@ export default function AvisoRenovacion({ accesoHasta }: { accesoHasta: string }
       const res = await fetch('/api/renovar', { method: 'POST' });
       const data = await res.json();
       if (data.init_point) {
-        window.location.href = data.init_point; // 👈 redirige a MercadoPago
+        window.location.href = data.init_point; // redirige a MercadoPago
       }
     } catch (err) {
       console.error('Error al renovar:', err);

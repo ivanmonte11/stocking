@@ -22,34 +22,38 @@ export default function LoginForm({ onSubmit, isSubmitting }: LoginFormProps) {
   } = useForm<FormValues>();
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-      <div>
-      <Input
-  id="email"
-  label="Correo electrónico"
-  type="email"
-  autoComplete="email"
-  register={register}
-  error={errors.email}
-  required
-  validate={(value) =>
-    /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(value) || 'Correo electrónico inválido'
-  }
-/>
+    <form
+      onSubmit={handleSubmit(onSubmit)}
+      className="space-y-6 bg-purple-50 border border-purple-100 rounded-xl p-8 shadow-md"
+    >
+      <div className="space-y-4">
+        <Input
+          id="email"
+          label="Correo electrónico"
+          type="email"
+          autoComplete="email"
+          register={register}
+          error={errors.email}
+          required
+          validate={(value) =>
+            /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(value) || 'Correo electrónico inválido'
+          }
+          className="bg-blue-50 border border-blue-200 text-gray-800"
+        />
 
-<Input
-  id="password"
-  label="Contraseña"
-  type="password"
-  autoComplete="current-password"
-  register={register}
-  error={errors.password}
-  required
-  validate={(value) =>
-    value.length >= 6 || 'La contraseña debe tener al menos 6 caracteres'
-  }
-/>
-
+        <Input
+          id="password"
+          label="Contraseña"
+          type="password"
+          autoComplete="current-password"
+          register={register}
+          error={errors.password}
+          required
+          validate={(value) =>
+            value.length >= 6 || 'La contraseña debe tener al menos 6 caracteres'
+          }
+          className="bg-blue-50 border border-blue-200 text-gray-800"
+        />
       </div>
 
       <div className="flex items-center justify-between">
@@ -60,7 +64,7 @@ export default function LoginForm({ onSubmit, isSubmitting }: LoginFormProps) {
             type="checkbox"
             className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
           />
-          <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900">
+          <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
             Recordarme
           </label>
         </div>

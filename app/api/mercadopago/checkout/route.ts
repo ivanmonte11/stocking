@@ -2,32 +2,39 @@ import { NextResponse } from 'next/server';
 
 export async function POST(request: Request) {
   try {
-    const { email } = await request.json();
+    const { email, plan } = await request.json();
 
     if (!email || typeof email !== 'string') {
       return NextResponse.json({ error: 'Email no proporcionado' }, { status: 400 });
     }
 
+    const esAnual = plan === 'annual';
+
     const preference = {
       items: [
         {
-          title: 'Licencia mensual Stocking SaaS',
+          title: esAnual
+            ? 'Licencia anual Stocking SaaS'
+            : 'Licencia mensual Stocking SaaS',
           description: 'Acceso institucional al sistema de gestión multi-tenant',
           quantity: 1,
-          unit_price: 25000,
+          unit_price: esAnual ? 144000 : 15000,
           currency_id: 'ARS'
         }
       ],
       payer: {
-        email // opcional, pero útil para trazabilidad
+        email
       },
-      external_reference: email, //  clave para el webhook
+      external_reference: email,
       back_urls: {
         success: `${process.env.NEXT_PUBLIC_BASE_URL}/pago`,
         failure: `${process.env.NEXT_PUBLIC_BASE_URL}/pago`,
         pending: `${process.env.NEXT_PUBLIC_BASE_URL}/pago`
       },
-      auto_return: 'approved'
+      auto_return: 'approved',
+      metadata: {
+        plan: esAnual ? 'annual' : 'initial'
+      }
     };
 
     const res = await fetch('https://api.mercadopago.com/checkout/preferences', {
