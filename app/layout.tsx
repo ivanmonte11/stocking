@@ -3,17 +3,20 @@
 import '@/globals.css';
 import { QueryProvider } from './providers/QueryProvider';
 import { Navbar } from '@/components/NavBar';
-import { AuthProvider } from '@/context/AuthContext';
+import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { usePathname } from 'next/navigation';
 
 function LayoutContent({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, loading } = useAuth(); // ahora usamos loading
   const pathname = usePathname();
   const isHome = pathname === '/';
 
+  // ✅ Evitamos renderizar nada hasta confirmar sesión
+  if (loading) return null;
+
   return (
     <div className="min-h-screen flex flex-col">
-      {/* El Navbar decide internamente si se muestra o no */}
-      <Navbar />
+      {isAuthenticated && <Navbar />}
 
       <main className={isHome ? 'flex-grow p-0' : 'flex-grow p-4 md:p-6'}>
         {children}

@@ -1,77 +1,89 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 
 export default function ActivacionPage() {
   const router = useRouter();
-  const { user, isAuthenticated, loading } = useAuth();
-  const [plan, setPlan] = useState<'initial' | 'annual'>('initial');
+  const { user } = useAuth();
+
+
+  const [plan, setPlan] = useState<'mensual' | 'anual' | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const email = user?.email || localStorage.getItem('emailPendiente');
 
   useEffect(() => {
-  const storedPlan = localStorage.getItem('planSeleccionado');
-  if (storedPlan === 'initial' || storedPlan === 'annual') {
-    setPlan(storedPlan);
-  } else {
-    setPlan('initial'); // fallback editorial
-  }
-}, []);
-
+    if (!email) {
+      console.warn('No se detectó email. Redirigiendo al login.');
+      router.push('/login');
+    }
+  }, [email, router]);
 
   const handleCheckout = async () => {
-    if (!user?.email) return;
+    if (!email || !plan) return;
 
-    const res = await fetch('/api/mercadopago/checkout', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ email: user.email, plan })
-    });
+    setLoading(true);
 
-    const data = await res.json();
+    try {
+      const res = await fetch('/api/mercadopago/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, plan }),
+      });
 
-    if (!data?.init_point || typeof data.init_point !== 'string') {
-      console.error('init_point inválido:', data);
-      alert('Hubo un problema al generar el enlace de pago. Intentá nuevamente.');
-      return;
+      const data = await res.json();
+
+      if (!data?.init_point || typeof data.init_point !== 'string') {
+        console.error('init_point inválido:', data);
+        alert('Hubo un problema al generar el enlace de pago. Intentá nuevamente.');
+        setLoading(false);
+        return;
+      }
+
+      router.push(data.init_point);
+    } catch (error) {
+      console.error('Error en handleCheckout:', error);
+      alert('Error inesperado. Intentá más tarde.');
+      setLoading(false);
     }
-
-    router.push(data.init_point);
   };
 
-  if (loading) return <p>Cargando...</p>;
-  if (!isAuthenticated || !user) return <p>No estás autenticado.</p>;
-
-  const licenciaTexto = plan === 'annual' ? '$144.000 ARS / año' : '$15.000 ARS / mes';
-  const tipoTexto = plan === 'annual' ? 'suscripción anual' : 'suscripción mensual';
-  const botonTexto = plan === 'annual' ? 'Activar plan anual' : 'Activar acceso inicial';
-
   return (
-    <div className="max-w-xl mx-auto px-6 py-12">
-      <h1 className="text-3xl font-bold mb-4 text-center">🎉 ¡Tu cuenta fue creada con éxito!</h1>
-      <p className="text-lg mb-6 text-center">
-        Para comenzar a usar el sistema, activá tu cuenta mediante la {tipoTexto}. Este paso habilita el acceso completo a la plataforma y garantiza trazabilidad institucional.
+    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-8">
+      <h1 className="text-2xl font-bold mb-4">Activación de tu cuenta</h1>
+
+      <p className="mb-6 text-center">
+        Seleccioná un plan para completar la activación. Tu correo: <strong>{email}</strong>
       </p>
 
-      <div className="bg-gray-100 border border-gray-300 rounded-lg p-6 mb-8">
-        <ul className="space-y-2 text-sm">
-          <li><strong>Estado actual:</strong> Cuenta pendiente de activación</li>
-          <li><strong>Acceso:</strong> Bloqueado hasta confirmar suscripción</li>
-          <li><strong>Licencia de uso:</strong> {licenciaTexto}</li>
-          <li><strong>Correo asociado:</strong> {user.email}</li>
-        </ul>
-      </div>
-
-      <div className="text-center">
+      <div className="flex gap-4 mb-6">
         <button
-          onClick={handleCheckout}
-          className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-md transition"
+          onClick={() => setPlan('mensual')}
+          className={`px-4 py-2 rounded border ${
+            plan === 'mensual' ? 'bg-blue-600 text-white' : 'bg-white text-blue-600'
+          }`}
         >
-          {botonTexto}
+          Plan Mensual
+        </button>
+        <button
+          onClick={() => setPlan('anual')}
+          className={`px-4 py-2 rounded border ${
+            plan === 'anual' ? 'bg-blue-600 text-white' : 'bg-white text-blue-600'
+          }`}
+        >
+          Plan Anual
         </button>
       </div>
+
+      <button
+        onClick={handleCheckout}
+        disabled={!plan || loading}
+        className="px-6 py-3 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
+      >
+        {loading ? 'Cargando...' : 'Proceder al pago'}
+      </button>
     </div>
   );
 }

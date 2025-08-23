@@ -2,15 +2,10 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { FiPackage, FiHome, FiUsers, FiDollarSign } from 'react-icons/fi';
-import { useAuth } from '@/context/AuthContext';
+import { FiPackage, FiList, FiHome, FiUsers, FiDollarSign } from 'react-icons/fi';
 
 export const Navbar = () => {
   const pathname = usePathname();
-  const { isAuthenticated, loading } = useAuth();
-
-  // 🛑 Evitamos renderizar si aún no sabemos el estado de sesión
-  if (loading || !isAuthenticated) return null;
 
   const isActive = (path: string) => pathname === path;
 
@@ -21,19 +16,19 @@ export const Navbar = () => {
           <div className="flex space-x-8">
             <Link 
               href="/dashboard/user" 
-              className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${isActive('/dashboard/user') ? 'border-blue-500 text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'}`}
+              className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${isActive('/dashboard') ? 'border-blue-500 text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'}`}
             >
               <FiHome className="mr-2" /> Inicio
             </Link>
             <Link 
-              href="/products" 
+              href="/products/" 
               className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${isActive('/products') ? 'border-blue-500 text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'}`}
             >
               <FiPackage className="mr-2" /> Productos
             </Link>
             <Link 
               href="/clientes" 
-              className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${isActive('/clientes') ? 'border-blue-500 text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'}`}
+              className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${isActive('/customers') ? 'border-blue-500 text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'}`}
             >
               <FiUsers className="mr-2" /> Clientes
             </Link>
