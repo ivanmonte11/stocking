@@ -6,30 +6,28 @@ import { useAuth } from '@/context/AuthContext';
 
 export default function ActivacionPage() {
   const router = useRouter();
-  const { user, loading } = useAuth();
+  const { user, isAuthenticated, loading } = useAuth();
   const [plan, setPlan] = useState<'initial' | 'annual'>('initial');
 
-  // 🧠 Email editorial desde sesión o localStorage
-  const email = user?.email || localStorage.getItem('emailPendiente');
-
   useEffect(() => {
-    const storedPlan = localStorage.getItem('planSeleccionado');
-    if (storedPlan === 'initial' || storedPlan === 'annual') {
-      setPlan(storedPlan);
-    } else {
-      setPlan('initial'); // fallback editorial
-    }
-  }, []);
+  const storedPlan = localStorage.getItem('planSeleccionado');
+  if (storedPlan === 'initial' || storedPlan === 'annual') {
+    setPlan(storedPlan);
+  } else {
+    setPlan('initial'); // fallback editorial
+  }
+}, []);
+
 
   const handleCheckout = async () => {
-    if (!email) return;
+    if (!user?.email) return;
 
     const res = await fetch('/api/mercadopago/checkout', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ email, plan })
+      body: JSON.stringify({ email: user.email, plan })
     });
 
     const data = await res.json();
@@ -43,17 +41,8 @@ export default function ActivacionPage() {
     router.push(data.init_point);
   };
 
-  // 🧩 Esperar carga y validar email
   if (loading) return <p>Cargando...</p>;
-  if (!email) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-red-600 text-center px-4">
-          No se detectó un correo válido. Reintentá desde el <a href="/auth/login" className="underline text-blue-600">login</a>.
-        </p>
-      </div>
-    );
-  }
+  if (!isAuthenticated || !user) return <p>No estás autenticado.</p>;
 
   const licenciaTexto = plan === 'annual' ? '$144.000 ARS / año' : '$15.000 ARS / mes';
   const tipoTexto = plan === 'annual' ? 'suscripción anual' : 'suscripción mensual';
@@ -71,7 +60,7 @@ export default function ActivacionPage() {
           <li><strong>Estado actual:</strong> Cuenta pendiente de activación</li>
           <li><strong>Acceso:</strong> Bloqueado hasta confirmar suscripción</li>
           <li><strong>Licencia de uso:</strong> {licenciaTexto}</li>
-          <li><strong>Correo asociado:</strong> {email}</li>
+          <li><strong>Correo asociado:</strong> {user.email}</li>
         </ul>
       </div>
 

@@ -1,4 +1,3 @@
-// context/AuthContext.tsx
 'use client';
 import { createContext, useContext, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -10,6 +9,7 @@ interface UserData {
   role: string;
   tenantId: number;
   accesoHasta?: string;
+  status?: string;
 }
 
 interface AuthContextType {
@@ -29,36 +29,71 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Intenta cargar la sesión al inicio
-    const token = localStorage.getItem('token');
-    const userData = localStorage.getItem('user');
-
-    if (token && userData) {
+    const loadSession = async () => {
       try {
-        const parsedUser = JSON.parse(userData);
-        setUser(parsedUser);
+        const res = await fetch('/api/session', { credentials: 'include' });
+        if (!res.ok) throw new Error('Sesión no válida');
+
+        const data = await res.json();
+        if (!data.user || typeof data.user !== 'object') {
+          throw new Error('Usuario no encontrado en sesión');
+        }
+
+        const userData = data.user as UserData;
+
+        // Validación editorial
+        if (userData.status !== 'active') throw new Error('Cuenta no activada');
+
+        const acceso = new Date(userData.accesoHasta || '');
+        if (isNaN(acceso.getTime()) || acceso < new Date()) {
+          throw new Error('Licencia vencida o inválida');
+        }
+
+        setUser(userData);
         setIsAuthenticated(true);
       } catch (error) {
-        console.error('Error al parsear user data:', error);
-        logout();
+        // Fallback editorial solo en desarrollo
+        if (process.env.NODE_ENV === 'development') {
+          try {
+            const storedUser = localStorage.getItem('userData');
+            if (storedUser) {
+              const userData = JSON.parse(storedUser) as UserData;
+              setUser(userData);
+              setIsAuthenticated(true);
+              return;
+            }
+          } catch (e) {
+            console.warn('Fallback localStorage falló:', e);
+          }
+        }
+
+        console.warn('Sesión inválida:', error);
+        setUser(null);
+        setIsAuthenticated(false);
+      } finally {
+        setLoading(false);
       }
-    }
-    setLoading(false);
+    };
+
+    loadSession();
   }, []);
 
   const login = (token: string, userData: UserData) => {
-    localStorage.setItem('token', token);
-    localStorage.setItem('user', JSON.stringify(userData));
     setUser(userData);
     setIsAuthenticated(true);
+
+    // Guardar en localStorage solo en desarrollo
+    if (process.env.NODE_ENV === 'development') {
+      localStorage.setItem('userData', JSON.stringify(userData));
+    }
   };
 
   const logout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
     setUser(null);
     setIsAuthenticated(false);
-    router.push('/login');
+    if (process.env.NODE_ENV === 'development') {
+      localStorage.removeItem('userData');
+    }
   };
 
   return (

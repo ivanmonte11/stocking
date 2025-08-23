@@ -4,10 +4,13 @@ import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import RegisterForm from '@/components/auth/RegisterForm';
 import ActivationOptions from '@/components/ActivationOptions';
+import { useAuth } from '@/context/AuthContext';
 
 export default function RegisterPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { login } = useAuth();
+
   const [plan, setPlan] = useState<'initial' | 'annual' | null>(null);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -44,6 +47,14 @@ export default function RegisterPage() {
       if (!response.ok) {
         throw new Error(result.error || 'Error al registrar');
       }
+
+      // Validación editorial
+      if (!result.user || !result.token) {
+        throw new Error('Respuesta incompleta del servidor');
+      }
+
+      // Poblar contexto y localStorage en desarrollo
+      login(result.token, result.user);
 
       localStorage.setItem('planSeleccionado', plan || 'initial');
       router.push('/activacion');
