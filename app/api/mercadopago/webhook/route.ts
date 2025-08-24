@@ -1,4 +1,3 @@
-// app/api/mercadopago/webhook/route.ts
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 
@@ -10,7 +9,7 @@ export async function POST(request: Request) {
     const topic = body.type;
 
     if (topic !== 'payment') {
-      console.warn('Webhook ignorado: tipo no es "payment"', topic);
+      console.warn('🔕 Webhook ignorado: tipo no es "payment"', topic);
       return NextResponse.json({ ignored: true }, { status: 200 });
     }
 
@@ -24,22 +23,27 @@ export async function POST(request: Request) {
     const payment = await res.json();
 
     if (payment.status !== 'approved') {
-      console.warn('Pago no aprobado:', payment.status);
+      console.warn('⛔ Pago no aprobado:', payment.status);
       return NextResponse.json({ ignored: true }, { status: 200 });
     }
 
-    const email = payment.external_reference;
+    // 🧠 Parsear referencia editorial
+    const externalRef = payment.external_reference;
+    const [userIdStr, email] = externalRef?.split(':') ?? [];
+
     const plan = payment.metadata?.plan;
     const meses = plan === 'annual' ? 12 : 1;
 
-    if (!email || !['initial', 'annual'].includes(plan)) {
-      console.warn('Webhook ignorado: email o plan inválido', { email, plan });
+    if (!userIdStr || !email || !['initial', 'annual'].includes(plan)) {
+      console.warn('⚠️ Webhook ignorado: referencia o plan inválido', { externalRef, plan });
       return NextResponse.json({ ignored: true }, { status: 200 });
     }
 
-    const user = await prisma.user.findUnique({ where: { email } });
-    if (!user) {
-      console.warn('Usuario no encontrado en webhook:', email);
+    const userId = Number(userIdStr);
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+
+    if (!user || user.email !== email) {
+      console.warn('❌ Usuario no encontrado o email no coincide:', { userId, email });
       return NextResponse.json({ ignored: true }, { status: 200 });
     }
 
@@ -49,20 +53,23 @@ export async function POST(request: Request) {
     const nuevaFecha = new Date(base);
     nuevaFecha.setMonth(nuevaFecha.getMonth() + meses);
 
-    // 🛠️ Actualizar acceso y activar si estaba pendiente
+    // 🛠️ Preparar actualización editorial
+    const updateData: any = {
+      accesoHasta: nuevaFecha,
+      status: user.status === 'pending' ? 'active' : user.status
+    };
+
+    if (!user.tenantId) {
+      updateData.tenant = {
+        create: {
+          nombre: `${user.name}'s tenant`
+        }
+      };
+    }
+
     const updatedUser = await prisma.user.update({
-      where: { email },
-      data: {
-        accesoHasta: nuevaFecha,
-        status: user.status === 'pending' ? 'active' : user.status,
-        tenant: user.tenantId
-          ? undefined
-          : {
-              create: {
-                nombre: `${user.name}'s tenant`
-              }
-            }
-      },
+      where: { id: userId },
+      data: updateData,
       select: {
         id: true,
         name: true,
@@ -73,12 +80,19 @@ export async function POST(request: Request) {
       }
     });
 
-    console.log('Webhook procesado correctamente para:', email, '→', plan, '→', nuevaFecha);
+    console.log('✅ Webhook procesado:', {
+      userId,
+      email,
+      plan,
+      nuevaFecha,
+      status: updatedUser.status,
+      tenantId: updatedUser.tenantId
+    });
 
     return NextResponse.json({ success: true, user: updatedUser }, { status: 200 });
 
   } catch (error) {
-    console.error('Error en procesamiento de webhook:', error);
+    console.error('🔥 Error en webhook:', error);
     return NextResponse.json({ error: 'Error interno en webhook' }, { status: 500 });
   }
 }

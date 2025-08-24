@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import prisma from '@/lib/prisma';
 
 export async function POST(request: Request) {
   try {
@@ -8,7 +9,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Email no proporcionado' }, { status: 400 });
     }
 
+    const user = await prisma.user.findUnique({ where: { email } });
+
+    if (!user) {
+      return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 });
+    }
+
     const esAnual = plan === 'annual';
+    const external_reference = `${user.id}:${user.email}`;
 
     const preference = {
       items: [
@@ -23,9 +31,11 @@ export async function POST(request: Request) {
         }
       ],
       payer: {
-        email
+        email: user.email
       },
-      external_reference: email,
+      external_reference,
+      notification_url: `${process.env.NEXT_PUBLIC_BASE_URL}/api/mercadopago/webhook`,
+
       back_urls: {
         success: `${process.env.NEXT_PUBLIC_BASE_URL}/pago`,
         failure: `${process.env.NEXT_PUBLIC_BASE_URL}/pago`,
@@ -54,6 +64,7 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({ init_point: data.init_point }, { status: 200 });
+
   } catch (err) {
     console.error('[API] Error al generar preferencia:', err);
     return NextResponse.json({ error: 'Error interno al generar preferencia' }, { status: 500 });
