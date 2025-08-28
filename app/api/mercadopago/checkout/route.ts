@@ -32,6 +32,7 @@ export async function POST(request: Request) {
         pending: `${process.env.NEXT_PUBLIC_BASE_URL}/pago`
       },
       auto_return: 'approved',
+      notification_url: `${process.env.NEXT_PUBLIC_BASE_URL}/api/mercadopago/webhook`,
       metadata: {
         plan: esAnual ? 'annual' : 'initial'
       }
