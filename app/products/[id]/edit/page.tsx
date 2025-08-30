@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { ProductoForm } from '@/components/productos/ProductoForm.';
+import { ProductoForm } from '@/components/productos/ProductoForm';
 import { toast } from 'react-hot-toast';
 import { useEffect, useState } from 'react';
 

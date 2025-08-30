@@ -6,11 +6,21 @@ import prisma from '@/lib/prisma';
 export async function GET() {
   try {
     const token = cookies().get('token')?.value;
-    if (!token) {
+
+    //  Validación editorial del token
+    if (!token || token.trim() === '') {
+      console.warn('Token ausente o vacío');
       return NextResponse.json({ user: null }, { status: 401 });
     }
 
-    const decoded = getTokenData(token);
+    let decoded;
+    try {
+      decoded = getTokenData(token);
+      if (!decoded?.id) throw new Error('Token inválido o sin ID');
+    } catch (err) {
+      console.warn('Error al decodificar token:', err);
+      return NextResponse.json({ user: null }, { status: 401 });
+    }
 
     const user = await prisma.user.findUnique({
       where: { id: decoded.id },
@@ -27,12 +37,13 @@ export async function GET() {
     });
 
     if (!user) {
+      console.warn('Usuario no encontrado en base de datos');
       return NextResponse.json({ user: null }, { status: 404 });
     }
 
     return NextResponse.json({ user }, { status: 200 });
   } catch (error) {
-    console.error('Error en /api/session:', error);
+    console.error('Error inesperado en /api/session:', error);
     return NextResponse.json({ user: null }, { status: 500 });
   }
 }

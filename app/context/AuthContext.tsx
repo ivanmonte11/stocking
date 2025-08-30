@@ -32,7 +32,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const loadSession = async () => {
       try {
         const res = await fetch('/api/session', { credentials: 'include' });
-        if (!res.ok) throw new Error('Sesión no válida');
+
+        //  Blindaje editorial: abortar si el backend responde 401 o 404
+        if (res.status === 401 || res.status === 404) {
+          throw new Error('Sesión no válida');
+        }
 
         const data = await res.json();
         if (!data.user || typeof data.user !== 'object') {
@@ -52,7 +56,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setUser(userData);
         setIsAuthenticated(true);
       } catch (error) {
-        // Fallback editorial solo en desarrollo
+        console.warn('Sesión inválida:', error);
+
+        //  Fallback solo en desarrollo
         if (process.env.NODE_ENV === 'development') {
           try {
             const storedUser = localStorage.getItem('userData');
@@ -67,7 +73,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           }
         }
 
-        console.warn('Sesión inválida:', error);
         setUser(null);
         setIsAuthenticated(false);
       } finally {
@@ -82,15 +87,24 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setUser(userData);
     setIsAuthenticated(true);
 
-    // Guardar en localStorage solo en desarrollo
     if (process.env.NODE_ENV === 'development') {
       localStorage.setItem('userData', JSON.stringify(userData));
     }
   };
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      await fetch('/api/logout', {
+        method: 'POST',
+        credentials: 'include'
+      });
+    } catch (err) {
+      console.warn('Error al cerrar sesión:', err);
+    }
+
     setUser(null);
     setIsAuthenticated(false);
+
     if (process.env.NODE_ENV === 'development') {
       localStorage.removeItem('userData');
     }

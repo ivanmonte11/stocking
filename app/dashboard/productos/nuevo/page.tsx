@@ -1,6 +1,6 @@
 'use client';
 
-import { ProductoForm } from '@/components/productos/ProductoForm.';
+import { ProductoForm } from '@/components/productos/ProductoForm';
 import { useCreateProducto } from '@/lib/hooks/useProductos';
 import { useRouter } from 'next/navigation';
 
