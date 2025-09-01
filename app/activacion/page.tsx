@@ -44,7 +44,7 @@ export default function ActivacionPage() {
   if (loading) return <p>Cargando...</p>;
   if (!isAuthenticated || !user) return <p>No estás autenticado.</p>;
 
-  const licenciaTexto = plan === 'annual' ? '$144.000 ARS / año' : '$15.000 ARS / mes';
+  const licenciaTexto = plan === 'annual' ? '$192.000 ARS / año' : '$20.000 ARS / mes';
   const tipoTexto = plan === 'annual' ? 'suscripción anual' : 'suscripción mensual';
   const botonTexto = plan === 'annual' ? 'Activar plan anual' : 'Activar acceso inicial';
 
