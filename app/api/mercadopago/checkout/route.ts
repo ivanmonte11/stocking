@@ -16,9 +16,9 @@ export async function POST(request: Request) {
           title: esAnual
             ? 'Licencia anual Stocking SaaS'
             : 'Licencia mensual Stocking SaaS',
-          description: 'Acceso institucional al sistema de gestión multi-tenant',
+          description: 'Acceso institucional con trazabilidad, soporte quirúrgico y gestión multi-tenant',
           quantity: 1,
-          unit_price: esAnual ? 144000 : 15000,
+          unit_price: esAnual ? 192000 : 20000,
           currency_id: 'ARS'
         }
       ],
@@ -34,7 +34,8 @@ export async function POST(request: Request) {
       auto_return: 'approved',
       notification_url: `${process.env.NEXT_PUBLIC_BASE_URL}/api/mercadopago/webhook`,
       metadata: {
-        plan: esAnual ? 'annual' : 'initial'
+        plan: esAnual ? 'annual' : 'initial',
+        pricing_version: 'sep2025'
       }
     };
 

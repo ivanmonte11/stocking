@@ -13,17 +13,25 @@ export default function NewProductPage() {
 
   const handleSubmit = async (values: any) => {
     setIsSubmitting(true);
+
+    const payload = {
+      ...values,
+      estado: values.estado?.trim() || 'activo', // ← blindaje editorial
+    };
+
+    console.log('📦 Payload enviado a /api/productos:', payload);
+
     try {
       const data = await fetchAuthed('/api/productos', {
         method: 'POST',
-        body: JSON.stringify(values)
+        body: JSON.stringify(payload),
       });
 
       toast.success('Producto creado exitosamente');
       router.push(`/products/${data.producto.id}`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Error al crear el producto');
-      console.error('Error:', error);
+      console.error('🛑 Error en creación de producto:', error);
     } finally {
       setIsSubmitting(false);
     }

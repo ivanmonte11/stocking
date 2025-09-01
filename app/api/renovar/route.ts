@@ -1,4 +1,3 @@
-// app/api/renovar/route.ts
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 
@@ -20,9 +19,12 @@ export async function POST(request: Request) {
     const preference = {
       items: [
         {
-          title: isAnual ? 'Licencia anual Stocking' : 'Licencia mensual Stocking',
+          title: isAnual
+            ? 'Licencia anual Stocking SaaS'
+            : 'Licencia mensual Stocking SaaS',
+          description: 'Acceso institucional con trazabilidad, soporte quirúrgico y gestión multi-tenant',
           quantity: 1,
-          unit_price: isAnual ? 144000 : 15000,
+          unit_price: isAnual ? 192000 : 20000,
           currency_id: 'ARS'
         }
       ],
@@ -34,7 +36,10 @@ export async function POST(request: Request) {
       },
       notification_url: `${process.env.BASE_URL}/api/mercadopago/webhook`,
       auto_return: 'approved',
-      metadata: { plan }
+      metadata: {
+        plan,
+        pricing_version: 'sep2025'
+      }
     };
 
     const res = await fetch('https://api.mercadopago.com/checkout/preferences', {

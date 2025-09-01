@@ -348,7 +348,7 @@ export const ProductoForm = ({ initialData, onSubmit, isSubmitting }: ProductoFo
         multiline
         disabled={isSubmitting}
       />
-
+      <input type="hidden" {...register('estado')} value="activo" />
       <Button type="submit" disabled={isSubmitting}>
         {isSubmitting ? 'Guardando...' : 'Guardar'}
       </Button>

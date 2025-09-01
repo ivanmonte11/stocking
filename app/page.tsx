@@ -120,9 +120,9 @@ export default function Home() {
       <section className="py-16 px-6 text-center">
         <h3 className="text-sm text-gray-500 uppercase tracking-wide mb-6">Confiado por negocios como</h3>
         <div className="flex justify-center gap-10 flex-wrap opacity-80">
-          <img src="/logos/logo1.svg" alt="Tienda Bruma" className="h-8" />
+          <img src="/logos/logo1.svg" alt="Bugsy" className="h-8" />
           <img src="/logos/logo2.svg" alt="Cebra Moda" className="h-8" />
-          <img src="/logos/logo3.svg" alt="Local 93" className="h-8" />
+          <img src="/logos/logo3.svg" alt="Alaska" className="h-8" />
           <img src="/logos/logo4.svg" alt="Indumentaria Sur" className="h-8" />
         </div>
       </section>
@@ -132,7 +132,7 @@ export default function Home() {
         <p className="text-xl font-medium italic max-w-2xl mx-auto mb-4">
           “Desde que usamos Stocking, nuestro depósito dejó de ser un misterio. Todo está a un clic.”
         </p>
-        <p className="text-sm text-blue-700">— Sofía Rinaldi, Encargada de Tienda Bruma</p>
+        <p className="text-sm text-blue-700">— Alvaro M, Propietario de Bugsy Indumentarias</p>
       </section>
 
       {/* Footer */}

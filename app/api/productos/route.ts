@@ -63,6 +63,7 @@ export async function POST(request: Request) {
       ...body,
       precio: parseFloat(body.precio),
       costo: parseFloat(body.costo),
+      estado: body.estado?.trim() || 'activo', // ← blindaje editorial
       variantes: body.variantes.map((v: any) => ({
         ...v,
         stock: parseInt(v.stock, 10) || 0,
@@ -82,6 +83,7 @@ export async function POST(request: Request) {
         precio: validatedData.precio,
         costo: validatedData.costo,
         categoria: validatedData.categoria,
+        estado: validatedData.estado,
         tenantId: user.tenantId,
         creadoPorId: user.id,
         variantes: {
@@ -126,9 +128,10 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ producto, transaccion }, { status: 201 });
   } catch (error: any) {
-    console.error('Error al crear producto:', error instanceof Error ? error.message : error);
+    console.error('🛑 Error al crear producto:', error);
 
     if (error.name === 'ZodError') {
+      console.error('❌ ZodError:', error.errors);
       return NextResponse.json(
         { error: 'Datos inválidos', details: error.errors },
         { status: 400 }
