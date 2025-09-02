@@ -23,7 +23,7 @@ const ActivationOptions: React.FC = () => {
           <h3 className="text-xl font-semibold text-blue-900 mb-4">🔹 Acceso inicial — $20.000 ARS</h3>
           <ul className="text-sm text-gray-700 mb-6 space-y-2 list-disc list-inside">
             <li>Activación inmediata del sistema</li>
-            <li>Tenant propio y acceso institucional</li>
+            <li>Espacio operativo aislado, con datos y gestión propios</li>
             <li>Soporte editorial durante el primer mes</li>
             <li>Constancia institucional de activación</li>
           </ul>

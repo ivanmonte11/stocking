@@ -8,8 +8,7 @@ import { FiPackage, FiAlertTriangle, FiRefreshCw, FiDollarSign, FiUsers, FiTrend
 import VentasMensualesChart from '@/components/sales/VentasMensualesChart';
 import { FiList } from 'react-icons/fi';
 import AvisoRenovacion from '@/components/aviso/AvisoRenovacion';
-
-
+import ConstanciaInstitucional from '@/components/ConstanciaInstitucional';
 
 interface DashboardStats {
   products: number;
@@ -67,7 +66,7 @@ export default function UserDashboard() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const { data } = await axios.get('/api/dashboard/stats'); // Token httpOnly via cookie
+        const { data } = await axios.get('/api/dashboard/stats');
         setStats({
           products: data.totalProducts || 0,
           lowStock: data.lowStockItems || 0,
@@ -134,6 +133,12 @@ export default function UserDashboard() {
     }
   });
 
+  // ✅ Validación institucional
+  const mostrarConstancia =
+    user?.status === 'active' &&
+    typeof user.accesoHasta === 'string' &&
+    new Date(user.accesoHasta) > new Date();
+
   // 🕑 Loader inicial
   if (loading) {
     return (
@@ -147,8 +152,12 @@ export default function UserDashboard() {
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-6">Gestión de Indumentaria</h1>
+
       {/* 🟡 Aviso editorial de renovación */}
       {user?.accesoHasta && <AvisoRenovacion accesoHasta={user.accesoHasta} />}
+
+
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
         <DashboardCard title="Productos Totales" value={stats.products.toString()} icon={<FiPackage className="text-blue-500" size={24} />} trend="up" percentage="-" />
         <DashboardCard title="Stock Crítico" value={stats.lowStock.toString()} icon={<FiAlertTriangle className="text-red-500" size={24} />} alert trend="up" percentage={`${Math.abs(stats.lowStockGrowth).toFixed(1)}%`} />
@@ -158,6 +167,7 @@ export default function UserDashboard() {
         <DashboardCard title="Ingresos Mensuales" value={`$${stats.revenue.toLocaleString()}`} icon={<FiTrendingUp className="text-green-500" size={24} />} trend="up" percentage={`${Math.abs(stats.revenueGrowth).toFixed(1)}%`} />
         <DashboardCard title="Ganancia Neta" value={`$${stats.profit.toLocaleString()}`} icon={<FiPieChart className="text-emerald-500" size={24} />} trend="up" percentage={`${Math.abs(stats.profitGrowth).toFixed(1)}%`} />
       </div>
+
 
 
       {/* Secciones principales */}
@@ -263,6 +273,8 @@ export default function UserDashboard() {
         {/* Gráfico de Ventas Mensuales */}
         <VentasMensualesChart />
       </div>
+      {/* 🧾 Constancia institucional */}
+      {mostrarConstancia && <ConstanciaInstitucional user={user} />}
     </div>
 
   );

@@ -16,7 +16,8 @@ export async function POST(request: Request) {
           title: esAnual
             ? 'Licencia anual Stocking SaaS'
             : 'Licencia mensual Stocking SaaS',
-          description: 'Acceso institucional con trazabilidad, soporte quirúrgico y gestión multi-tenant',
+          description: 'Activación institucional con acceso completo al sistema Stocking SaaS, soporte dedicado y trazabilidad en cada acción',
+
           quantity: 1,
           unit_price: esAnual ? 192000 : 20000,
           currency_id: 'ARS'
