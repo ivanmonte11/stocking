@@ -88,6 +88,12 @@ export default function LoginPage() {
         )}
 
         <LoginForm onSubmit={handleLogin} isSubmitting={isSubmitting} />
+        <p className="text-center text-sm text-gray-600">
+          ¿Olvidaste tu clave?{' '}
+          <Link href="/recuperar" className="text-blue-600 hover:underline">
+            Recuperar acceso
+          </Link>
+        </p>
 
 
         <p className="text-center text-sm text-gray-600">
