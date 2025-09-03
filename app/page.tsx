@@ -120,7 +120,7 @@ export default function Home() {
       <section className="py-16 px-6 text-center">
         <h3 className="text-sm text-gray-500 uppercase tracking-wide mb-6">Confiado por negocios como</h3>
         <div className="flex justify-center gap-10 flex-wrap opacity-80">
-          <img src="/logos/logo1.svg" alt="Bugsy" className="h-8" />
+          <img src="/logos/logo1.jpeg" alt="Bugsy" className="h-20" />
           <img src="/logos/logo2.svg" alt="Cebra Moda" className="h-8" />
           <img src="/logos/logo3.svg" alt="Alaska" className="h-8" />
           <img src="/logos/logo4.svg" alt="Indumentaria Sur" className="h-8" />
@@ -135,10 +135,62 @@ export default function Home() {
         <p className="text-sm text-blue-700">— Alvaro M, Propietario de Bugsy Indumentarias</p>
       </section>
 
-      {/* Footer */}
-      <footer className="text-center text-sm text-gray-500 py-6 border-t border-gray-200 bg-white">
-        © {new Date().getFullYear()} Stocking. Desarrollado por MonteStack.
-      </footer>
+      <footer className="bg-gray-50 border-t border-gray-200 py-10 text-sm text-gray-600">
+  <div className="max-w-6xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-8 text-center md:text-left">
+    
+    {/* Marca */}
+    <div>
+      <p className="font-semibold text-gray-800 text-lg mb-2">Stocking SaaS</p>
+      <p>© {new Date().getFullYear()} Todos los derechos reservados.</p>
+      <p>Desarrollado por <span className="font-medium text-gray-700">MonteStack</span></p>
+    </div>
+
+    {/* Enlaces legales */}
+    <div>
+      <p className="font-semibold text-gray-800 mb-2">Legal</p>
+      <ul className="space-y-2">
+        <li>
+          <a href="/terminos" className="hover:underline text-blue-600">Términos</a>
+        </li>
+        <li>
+          <a href="/privacidad" className="hover:underline text-blue-600">Privacidad</a>
+        </li>
+      </ul>
+    </div>
+
+    {/* Contacto */}
+    <div>
+  <p className="font-semibold text-gray-800 mb-2">Contacto</p>
+  <ul className="space-y-2">
+    <li>
+      <strong>Telefono</strong>{' '}
+      <a
+        href="https://wa.me/542805023545"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-blue-600 hover:underline"
+      >
+        +54 280 5023545
+      </a>
+    </li>
+    <li>
+      <strong>Email:</strong>{' '}
+      <a
+        href="mailto:montestacksoft@gmail.com"
+        className="text-blue-600 hover:underline"
+      >
+        montestacksoft@gmail.com
+      </a>
+    </li>
+    <li>
+      <strong>Horario:</strong> Lunes a viernes, de 9 a 18 hs (ARG)
+    </li>
+  </ul>
+</div>
+
+  </div>
+</footer>
+
     </div>
   );
 }
