@@ -35,21 +35,27 @@ export const ProductoForm = ({ initialData, onSubmit, isSubmitting }: ProductoFo
   const [mostrarVarianteModal, setMostrarVarianteModal] = useState(false);
   const { fetchAuthed } = useApi();
 
-  const {
-    register,
-    handleSubmit,
-    setValue,
-    control,
-    watch,
-    formState: { errors },
-  } = useForm({
-    resolver: zodResolver(productoSchema),
-    defaultValues: initialData || {
-      precio: 0,
-      costo: 0,
-      variantes: [{ color: '', talla: '', stock: 0 }],
-    },
-  });
+  // En el useForm del ProductoForm
+const {
+  register,
+  handleSubmit,
+  setValue,
+  control,
+  watch,
+  formState: { errors },
+} = useForm({
+  resolver: zodResolver(productoSchema),
+  defaultValues: initialData || {
+    precio: "0",
+    costo: "0",
+    variantes: [{ color: '', talla: '', stock: "0" }],
+  },
+});
+
+// Cuando agregues una nueva variante, asegúrate de no incluir id
+const agregarVariante = () => {
+  append({ color: '', talla: '', stock: "0" }); // Sin id para nuevas variantes
+};
 
   const { fields, append, remove } = useFieldArray({
     control,

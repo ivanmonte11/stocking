@@ -11,37 +11,45 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
   const [loading, setLoading] = useState(true);
   const [stockTotal, setStockTotal] = useState<number>(0);
 
-  useEffect(() => {
-    const fetchProduct = async () => {
-      try {
-        const response = await fetch(`/api/productos/${params.id}`);
-        if (!response.ok) throw new Error('Producto no encontrado');
+  // En tu EditProductPage
+useEffect(() => {
+  const fetchProduct = async () => {
+    try {
+      const response = await fetch(`/api/productos/${params.id}`);
+      if (!response.ok) throw new Error('Producto no encontrado');
 
-        const data = await response.json();
+      const data = await response.json();
 
-        // Calcular stock total desde variantes
-        const total = data.variantes?.reduce(
-          (acc: number, v: any) => acc + (v.stock ?? 0),
-          0
-        ) ?? 0;
-        setStockTotal(total);
+      // Calcular stock total desde variantes
+      const total = data.variantes?.reduce(
+        (acc: number, v: any) => acc + (v.stock ?? 0),
+        0
+      ) ?? 0;
+      setStockTotal(total);
 
-        setInitialData({
-          ...data,
-          precio: data.precio.toString(),
-          costo: data.costo.toString(),
-        });
-      } catch (error) {
-        console.error('Error:', error);
-        toast.error('Error al cargar el producto');
-        router.push('/products');
-      } finally {
-        setLoading(false);
-      }
-    };
+      // Formatear correctamente los datos para el formulario
+      setInitialData({
+        ...data,
+        precio: data.precio.toString(),
+        costo: data.costo.toString(),
+        // Las variantes vienen sin ID del backend
+        variantes: data.variantes?.map((v: any) => ({
+          color: v.color || '',
+          talla: v.talla || '',
+          stock: v.stock.toString() // Convertir a string para el formulario
+        })) || []
+      });
+    } catch (error) {
+      console.error('Error:', error);
+      toast.error('Error al cargar el producto');
+      router.push('/products');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetchProduct();
-  }, [params.id, router]);
+  fetchProduct();
+}, [params.id, router]);
 
   const handleSubmit = async (values: any) => {
     try {

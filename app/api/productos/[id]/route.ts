@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { productoSchema } from '@/lib/validations/productoSchema';
 import { error } from 'console';
+import { getUserFromCookies } from '@/lib/getUserFromCookies';
 
 const prisma = new PrismaClient();
 
@@ -10,8 +11,16 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
+    const user = await getUserFromCookies();
+    
     const producto = await prisma.producto.findUnique({
-      where: { id: parseInt(params.id) },
+      where: { 
+        id: parseInt(params.id),
+        tenantId: user.tenantId 
+      },
+      include: {
+        variantes: true // ← ¡ESTO ES CRUCIAL!
+      }
     });
 
     if (!producto) {
@@ -30,50 +39,140 @@ export async function GET(
   }
 }
 
-
 export async function PUT(
   request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
+    const user = await getUserFromCookies();
     const body = await request.json();
 
-    // Se parsean primero los números que vienen como strings
     const parsedBody = {
       ...body,
       precio: body.precio ? parseFloat(body.precio) : 0,
       costo: body.costo ? parseFloat(body.costo) : 0,
-      stock: body.stock ? parseInt(body.stock) : 0
+      variantes: body.variantes ? body.variantes.map((v: any) => ({
+        ...v,
+        stock: v.stock ? parseInt(v.stock) : 0
+      })) : []
     };
 
     const validatedData = productoSchema.parse(parsedBody);
 
     const productoExistente = await prisma.producto.findUnique({
-      where: { id: parseInt(params.id) },
+      where: { 
+        id: parseInt(params.id),
+        tenantId: user.tenantId 
+      },
+      include: { 
+        variantes: {
+          where: { tenantId: user.tenantId },
+          include: {
+            movimientos: true // ← Verificar si tiene movimientos
+          }
+        } 
+      }
     });
 
     if (!productoExistente) {
-  return NextResponse.json(
-    { error: 'Producto no encontrado' },
-    { status: 404 }
-  );
-}
+      return NextResponse.json(
+        { error: 'Producto no encontrado' },
+        { status: 404 }
+      );
+    }
 
+    const producto = await prisma.$transaction(async (tx) => {
+      // 1. Primero manejar variantes existentes
+      for (const varianteExistente of productoExistente.variantes) {
+        const varianteEnFormulario = validatedData.variantes.find(
+          (v: any) => v.color === varianteExistente.color && 
+                     v.talla === varianteExistente.talla
+        );
 
+        if (varianteEnFormulario) {
+          // Actualizar variante existente
+          await tx.varianteProducto.update({
+            where: { 
+              id: varianteExistente.id,
+              tenantId: user.tenantId 
+            },
+            data: {
+              color: varianteEnFormulario.color,
+              talla: varianteEnFormulario.talla,
+              stock: varianteEnFormulario.stock
+            }
+          });
+        } else {
+          // Verificar si la variante tiene movimientos antes de eliminar
+          const tieneMovimientos = varianteExistente.movimientos.length > 0;
+          
+          if (tieneMovimientos) {
+            // Si tiene movimientos, mantener la variante pero setear stock a 0
+            await tx.varianteProducto.update({
+              where: { 
+                id: varianteExistente.id,
+                tenantId: user.tenantId 
+              },
+              data: {
+                stock: 0,
+                // Opcional: marcar como inactiva en lugar de eliminar
+                // estado: 'inactiva'
+              }
+            });
+          } else {
+            // Si no tiene movimientos, eliminar
+            await tx.varianteProducto.delete({
+              where: { 
+                id: varianteExistente.id,
+                tenantId: user.tenantId 
+              }
+            });
+          }
+        }
+      }
 
-    const producto = await prisma.producto.update({
-      where: { id: parseInt(params.id) },
-      data: {
-        codigoBarra: validatedData.codigoBarra,
-        nombre: validatedData.nombre,
-        descripcion: validatedData.descripcion,
-        precio: validatedData.precio,
-        costo: validatedData.costo,
-        categoria: validatedData.categoria,
-        fechaActualizacion: new Date(),
-        estado: validatedData.estado,
+      // 2. Crear nuevas variantes que no existían
+      for (const varianteNueva of validatedData.variantes) {
+        const varianteYaExiste = productoExistente.variantes.some(
+          (v: any) => v.color === varianteNueva.color && 
+                     v.talla === varianteNueva.talla
+        );
 
-      },
+        if (!varianteYaExiste) {
+          await tx.varianteProducto.create({
+            data: {
+              color: varianteNueva.color,
+              talla: varianteNueva.talla,
+              stock: varianteNueva.stock,
+              productoId: parseInt(params.id),
+              tenantId: user.tenantId
+            }
+          });
+        }
+      }
+
+      // 3. Actualizar el producto principal
+      return await tx.producto.update({
+        where: { 
+          id: parseInt(params.id),
+          tenantId: user.tenantId 
+        },
+        data: {
+          codigoBarra: validatedData.codigoBarra,
+          nombre: validatedData.nombre,
+          descripcion: validatedData.descripcion,
+          precio: validatedData.precio,
+          costo: validatedData.costo,
+          categoria: validatedData.categoria,
+          fechaActualizacion: new Date(),
+          estado: validatedData.estado,
+        },
+        include: {
+          variantes: {
+            where: { tenantId: user.tenantId }
+          }
+        }
+      });
     });
 
     return NextResponse.json(producto);
@@ -95,7 +194,7 @@ export async function PUT(
     }
 
     return NextResponse.json(
-      { error: 'Error al actualizar producto' },
+      { error: 'Error al actualizar producto', details: error.message },
       { status: 500 }
     );
   }

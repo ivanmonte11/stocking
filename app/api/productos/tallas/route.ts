@@ -20,7 +20,7 @@ export async function GET() {
     const tallas = Array.from(
       new Set(
         variantes
-          .map((v: { talla: string | null }) => v.talla?.trim().toLowerCase())
+          .map((v: { talla: string | null }) => v.talla?.trim())
           .filter(Boolean)
       )
     ).sort();

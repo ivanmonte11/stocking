@@ -21,7 +21,7 @@ export async function GET() {
     const colores = Array.from(
       new Set(
         variantes
-          .map((v: { color: string | null }) => v.color?.trim().toLowerCase())
+          .map((v: { color: string | null }) => v.color?.trim())
           .filter(Boolean)
       )
     ).sort();
