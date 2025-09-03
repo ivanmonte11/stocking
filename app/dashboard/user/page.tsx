@@ -12,6 +12,7 @@ import ConstanciaInstitucional from '@/components/ConstanciaInstitucional';
 
 interface DashboardStats {
   products: number;
+  archivedProducts: number;
   lowStock: number;
   todayMovements: number;
   monthlySales: number;
@@ -42,6 +43,7 @@ export default function UserDashboard() {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<DashboardStats>({
     products: 0,
+    archivedProducts: 0,
     lowStock: 0,
     todayMovements: 0,
     monthlySales: 0,
@@ -69,6 +71,7 @@ export default function UserDashboard() {
         const { data } = await axios.get('/api/dashboard/stats');
         setStats({
           products: data.totalProducts || 0,
+          archivedProducts: data.archivedProducts || 0,
           lowStock: data.lowStockItems || 0,
           todayMovements: data.todayMovements || 0,
           monthlySales: data.monthlySales || 0,
@@ -160,6 +163,7 @@ export default function UserDashboard() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
         <DashboardCard title="Productos Totales" value={stats.products.toString()} icon={<FiPackage className="text-blue-500" size={24} />} trend="up" percentage="-" />
+        <DashboardCard title="Productos Archivados"value={stats.archivedProducts.toString()} icon={<FiList className="text-gray-500" size={24} />} trend="down" percentage="-" />
         <DashboardCard title="Stock Crítico" value={stats.lowStock.toString()} icon={<FiAlertTriangle className="text-red-500" size={24} />} alert trend="up" percentage={`${Math.abs(stats.lowStockGrowth).toFixed(1)}%`} />
         <DashboardCard title="Movimientos Hoy" value={stats.todayMovements.toString()} icon={<FiRefreshCw className="text-green-500" size={24} />} />
         <DashboardCard title="Ventas Mensuales" value={`$${stats.monthlySales.toLocaleString()}`} icon={<FiDollarSign className="text-purple-500" size={24} />} trend="up" percentage={`${Math.abs(stats.salesGrowth).toFixed(1)}%`} />

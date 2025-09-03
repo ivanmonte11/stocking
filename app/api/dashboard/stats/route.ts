@@ -15,8 +15,20 @@ export async function GET() {
 
     // 📦 Productos
     const totalProducts = await prisma.producto.count({
-      where: { tenantId }
-    });
+  where: {
+    tenantId,
+    estado: { not: 'archivado' }
+  }
+});
+
+const archivedProducts = await prisma.producto.count({
+  where: {
+    tenantId,
+    estado: 'archivado'
+  }
+});
+
+
 
     const lowStockItems = await prisma.producto.count({
       where: {
@@ -190,6 +202,7 @@ export async function GET() {
     return NextResponse.json({
       totalProducts,
       lowStockItems,
+      archivedProducts,
       todayMovements: todayTransactions,
       totalCustomers,
       monthlySales,

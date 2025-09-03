@@ -76,11 +76,12 @@ function formatPesos(value: number): string {
 export default function TicketPDF({ transaccion }: { transaccion: any }) {
   const fecha = new Date(transaccion.fecha).toLocaleString('es-AR');
 
-  const totalPesos =
-    transaccion.ventas?.reduce(
-      (sum: number, v: any) => sum + (v.precio_unitario ?? 0) * v.cantidad,
-      0
-    ) ?? 0;
+ const totalPesos =
+  transaccion.ventas?.reduce(
+    (sum: number, v: any) => sum + (v.precioUnitario ?? 0) * v.cantidad,
+    0
+  ) ?? 0;
+
 
   return (
     <Document>
@@ -106,7 +107,8 @@ export default function TicketPDF({ transaccion }: { transaccion: any }) {
             const color = venta.variante?.color ?? '-';
             const talla = venta.variante?.talla ?? '-';
             const cantidad = venta.cantidad ?? 1;
-            const precioUnit = venta.precio_unitario ?? 0;
+            const precioUnit = venta.precioUnitario ?? 0;
+
             const subtotal = cantidad * precioUnit;
 
             return (
